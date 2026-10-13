@@ -1,0 +1,2 @@
+ALTER TABLE "events" DROP CONSTRAINT "events_coordinates_valid";--> statement-breakpoint
+ALTER TABLE "events" ADD CONSTRAINT "events_coordinates_valid" CHECK (("events"."latitude" IS NULL AND "events"."longitude" IS NULL) OR ("events"."latitude" IS NOT NULL AND "events"."longitude" IS NOT NULL AND "events"."latitude" BETWEEN -90 AND 90 AND "events"."longitude" BETWEEN -180 AND 180));

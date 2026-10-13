@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+/*
+ * Tikiti design tokens — derived from the reference: near-black canvas with soft
+ * charcoal gradients, white pill primary actions, glassy dark surfaces, large
+ * radius image-first cards and a floating pill navigation.
+ */
+:root {
+  --bg: #0a0a0b;
+  --bg-elevated: #141416;
+  --surface: #1a1a1d;
+  --surface-2: #232327;
+  --surface-3: #2c2c31;
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.16);
+  --fg: #f5f5f6;
+  --fg-muted: #a1a1a8;
+  --fg-subtle: #6e6e76;
+  --primary: #ffffff;
+  --primary-fg: #0a0a0b;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #93c5fd;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--fg-muted);
+  --color-subtle: var(--fg-subtle);
+  --color-primary: var(--primary);
+  --color-primary-fg: var(--primary-fg);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --radius-card: 1.75rem;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgb(255 255 255 / 0.07), transparent 60%),
+    radial-gradient(800px 400px at 100% 0%, rgb(255 255 255 / 0.03), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgb(255 255 255 / 0.85);
+  color: #000;
+}
+
+:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.6;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+.glass {
+  background: rgb(30 30 34 / 0.55);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+.img-fade {
+  background: linear-gradient(180deg, transparent 35%, rgb(10 10 11 / 0.92) 100%);
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.05), transparent);
+  animation: shimmer 1.4s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+  * {
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+}
+
+/* ── Maps (Leaflet) ───────────────────────────────────────────────────────── */
+.tikiti-map .leaflet-tile-pane {
+  filter: grayscale(0.35) brightness(0.92) contrast(1.05);
+}
+.tikiti-map .leaflet-container .leaflet-control-attribution {
+  background: rgb(10 10 11 / 0.8);
+  color: #cfcfd4;
+  font-size: 10px;
+  border-top-left-radius: 8px;
+}
+.tikiti-map .leaflet-container .leaflet-control-attribution a {
+  color: #fff;
+  text-decoration: underline;
+}
+.tikiti-map .leaflet-bar a {
+  background: #1a1a1d;
+  color: #f5f5f6;
+  border-color: rgb(255 255 255 / 0.1);
+}
+.tikiti-map .leaflet-bar a:hover {
+  background: #2c2c31;
+}
+.tikiti-map .leaflet-container:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -2px;
+}
+.tikiti-pin {
+  background: none;
+  border: 0;
+  filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.5));
+}
+.tikiti-map .leaflet-popup-content-wrapper,
+.tikiti-map .leaflet-popup-tip {
+  background: #141416;
+  color: #f5f5f6;
+}
