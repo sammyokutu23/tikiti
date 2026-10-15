@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Eye, ScanLine, Users } from "lucide-react";
+import { Eye, ScanLine, Sparkles, Users } from "lucide-react";
 import { Flash } from "@/components/dash/flash";
 import { FinanceBreakdown } from "@/components/dash/finance";
 import { Alert, Badge, ButtonLink, Card, PageHeader, Section, Stat, StatusBadge, Textarea } from "@/components/ui";
@@ -38,6 +38,7 @@ export default async function ManageEventPage({ params, searchParams }: PageProp
         subtitle={`${formatDateTime(ev.startsAt, tz)} · ${ev.venueName}, ${ev.city}`}
         actions={
           <>
+            <ButtonLink href={`/organizer/events/${ev.id}/banner`} variant="secondary" size="sm"><Sparkles className="size-4" aria-hidden />AI banner</ButtonLink>
             <ButtonLink href={`/organizer/events/${ev.id}/preview`} variant="secondary" size="sm"><Eye className="size-4" aria-hidden />Preview</ButtonLink>
             <ButtonLink href={`/organizer/events/${ev.id}/attendees`} variant="secondary" size="sm"><Users className="size-4" aria-hidden />Attendees</ButtonLink>
             <ButtonLink href={`/organizer/events/${ev.id}/scan`} size="sm"><ScanLine className="size-4" aria-hidden />Scan tickets</ButtonLink>
@@ -81,7 +82,7 @@ export default async function ManageEventPage({ params, searchParams }: PageProp
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Tickets sold" value={`${stats.sold} / ${stats.capacity}`} />
-        <Stat label="Held in checkout" value={stats.reserved} hint="Temporary reservations" />
+        <Stat label="Held" value={stats.reserved} hint="Checkout holds & payment plans" />
         <Stat label="Checked in" value={stats.attendance.checkedIn} hint={`of ${stats.attendance.issued} valid tickets`} />
         <Stat label="Confirmed bookings" value={stats.bookings.confirmed} hint={`${stats.attendance.refunded} tickets refunded`} />
       </div>
@@ -176,6 +177,7 @@ export default async function ManageEventPage({ params, searchParams }: PageProp
                 startsLocal: local(ev.startsAt),
                 endsLocal: local(ev.endsAt),
                 refundPolicy: ev.refundPolicy,
+                installmentsEnabled: ev.installmentsEnabled ? "on" : "",
                 coverImageUrl: ev.coverImageUrl ?? "",
                 arrivalInstructions: ev.arrivalInstructions,
                 latitude: ev.latitude === null ? "" : String(ev.latitude),

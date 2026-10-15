@@ -20,7 +20,9 @@ import {
   emailSuppressions,
   events,
   organizerProfiles,
+  paymentPlans,
   paymentTransactions,
+  planInstallments,
   type EmailDelivery,
 } from "@/db/schema";
 import { env } from "@/lib/env";
@@ -44,8 +46,17 @@ import {
   paymentFailedEmail,
   paymentReviewEmail,
   refundCompletedEmail,
+  planDepositConfirmedEmail,
+  planEndedEmail,
+  planFinalDeadlineEmail,
+  planInstallmentDueEmail,
+  planInstallmentOverdueEmail,
+  planPaymentConfirmedEmail,
+  planPaymentFailedEmail,
+  planPaymentReviewEmail,
   type BookingEmailData,
   type OrganizerEmailData,
+  type PlanEmailData,
 } from "./templates";
 import { getEmailTransport, type OutgoingEmail } from "./transport";
 
@@ -120,6 +131,25 @@ async function organizerContext(eventId: string): Promise<OrganizerEmailData> {
   };
 }
 
+/** Plan schedule + booking data for Lipa Mdogo Mdogo emails (loaded at send time). */
+async function planContext(bookingId: string, linkIssuedAt: Date) {
+  const base = await bookingContext(bookingId, linkIssuedAt);
+  const [plan] = await db.select().from(paymentPlans).where(eq(paymentPlans.bookingId, bookingId));
+  if (!plan) throw new EmailSendError("Payment plan not found", "render", { retryable: false });
+  const installments = await db.select().from(planInstallments).where(eq(planInstallments.planId, plan.id)).orderBy(planInstallments.sequence);
+  const label = (seq: number) => (seq === 0 ? "Deposit" : `Installment ${seq} of ${plan.installmentCount}`);
+  const next = installments.find((i) => i.status !== "paid" && i.status !== "cancelled");
+  const data: PlanEmailData = {
+    ...base.data,
+    paidMinor: plan.paidMinor,
+    outstandingMinor: plan.totalMinor - plan.paidMinor,
+    finalDueAt: plan.finalDueAt,
+    schedule: installments.map((i) => ({ label: label(i.sequence), amountMinor: i.amountMinor, dueAt: i.dueAt, status: i.status })),
+    next: next ? { label: label(next.sequence), amountMinor: next.amountMinor, dueAt: next.dueAt } : null,
+  };
+  return { ...base, plan, installments, planData: data };
+}
+
 type Rendered = { msg: Omit<OutgoingEmail, "to"> } | { skip: string };
 
 async function render(d: EmailDelivery, secret: string | undefined): Promise<Rendered> {
@@ -141,7 +171,8 @@ async function render(d: EmailDelivery, secret: string | undefined): Promise<Ren
       if (!isValidPdf(pdf.bytes)) throw new EmailSendError("Generated ticket file is not a valid PDF", "render", { retryable: true });
       const attach = pdf.bytes.length <= maxAttachmentBytes();
       const tickets = pdf.tickets.map((t) => ({ ticketType: t.ticketType, label: t.label, attendeeName: t.attendeeName || data.buyerName }));
-      const c = bookingConfirmationEmail({ ...data, tickets, attachmentOmitted: !attach });
+      const [plan] = await db.select({ status: paymentPlans.status }).from(paymentPlans).where(eq(paymentPlans.bookingId, booking.id));
+      const c = bookingConfirmationEmail({ ...data, tickets, attachmentOmitted: !attach, planCompleted: plan?.status === "fully_paid" });
       return {
         msg: {
           ...c,
@@ -174,6 +205,42 @@ async function render(d: EmailDelivery, secret: string | undefined): Promise<Ren
       }
       return { msg: paymentReviewEmail(data) };
     }
+    case "plan_deposit_confirmed":
+      return { msg: planDepositConfirmedEmail((await planContext(d.bookingId!, d.createdAt)).planData) };
+    case "plan_payment_confirmed": {
+      const c = await planContext(d.bookingId!, d.createdAt);
+      const inst = c.installments.find((i) => i.id === meta.installmentId);
+      return { msg: planPaymentConfirmedEmail({ ...c.planData, amountMinor: inst?.amountMinor ?? 0 }) };
+    }
+    case "plan_payment_failed": {
+      const c = await planContext(d.bookingId!, d.createdAt);
+      const inst = c.installments.find((i) => i.id === meta.installmentId);
+      if (inst?.status === "paid") return { skip: "installment paid since" };
+      if (c.plan.status !== "active" && c.plan.status !== "awaiting_deposit") return { skip: `plan is ${c.plan.status}` };
+      return { msg: planPaymentFailedEmail({ ...c.planData, reason: String(meta.reason ?? "the payment was not completed") }) };
+    }
+    case "plan_installment_due":
+    case "plan_installment_overdue": {
+      const c = await planContext(d.bookingId!, d.createdAt);
+      const inst = c.installments.find((i) => i.id === meta.installmentId);
+      if (!inst || inst.status === "paid" || inst.status === "cancelled") return { skip: "installment no longer outstanding" };
+      if (c.plan.status !== "active") return { skip: `plan is ${c.plan.status}` };
+      if (kind === "plan_installment_due") return { msg: planInstallmentDueEmail(c.planData) };
+      const graceH = Number((c.plan.policy as { overdueGraceHours?: number }).overdueGraceHours ?? 72);
+      const graceEndsAt = new Date(Math.min(inst.dueAt.getTime() + graceH * 3_600_000, c.plan.finalDueAt.getTime()));
+      return { msg: planInstallmentOverdueEmail({ ...c.planData, graceEndsAt }) };
+    }
+    case "plan_final_deadline": {
+      const c = await planContext(d.bookingId!, d.createdAt);
+      if (c.plan.status !== "active" || c.plan.paidMinor >= c.plan.totalMinor) return { skip: `plan is ${c.plan.status}` };
+      return { msg: planFinalDeadlineEmail(c.planData) };
+    }
+    case "plan_ended": {
+      const c = await planContext(d.bookingId!, d.createdAt);
+      return { msg: planEndedEmail({ ...c.planData, reason: String(meta.reason ?? ""), refundMinor: Number(meta.refundMinor ?? 0), retainedMinor: Number(meta.retainedMinor ?? 0) }) };
+    }
+    case "plan_payment_review":
+      return { msg: planPaymentReviewEmail((await planContext(d.bookingId!, d.createdAt)).planData) };
     case "event_reminder": {
       const { booking, event, data } = await bookingContext(d.bookingId!, d.createdAt);
       if (booking.status !== "confirmed" || event.status !== "published" || event.startsAt <= new Date()) return { skip: "event no longer upcoming for this booking" };

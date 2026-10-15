@@ -115,6 +115,7 @@ export function StatusPoller({ reference, access, initial }: { reference: string
       cancelled: ["Order cancelled", "This order was cancelled and the tickets were released."],
       failed: ["Tickets sold out", "Your payment arrived after the tickets sold out. A full refund has been started automatically."],
       refunded: ["Booking refunded", "This booking has been refunded."],
+      on_plan: ["Deposit received — tickets reserved", "Your Lipa Mdogo Mdogo plan is active. Pay the remaining installments from your booking page; your entry tickets are issued once the balance is paid."],
     };
     const [title, body] = map[s.status] ?? ["Booking update", `Status: ${s.status}`];
     return (

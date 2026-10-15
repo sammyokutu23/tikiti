@@ -13,6 +13,9 @@ import { formatPhone } from "@/lib/utils";
 import { authorizeBooking } from "@/server/bookings/authorize";
 import { expireStaleBookings } from "@/server/bookings/lifecycle";
 import { checkoutPaymentModes } from "@/server/payments/options";
+import { formatDateTime } from "@/lib/dates";
+import { loadPlan, planOfferForBooking } from "@/server/plans/service";
+import { PaymentChoice, PlanCheckoutForm } from "@/app/(site)/bookings/plan-forms";
 
 export const metadata = { title: "Payment" };
 
@@ -40,6 +43,10 @@ export default async function PaymentPage({ params, searchParams }: PageProps<"/
     .from(paymentTransactions)
     .where(and(eq(paymentTransactions.bookingId, booking.id), eq(paymentTransactions.provider, "daraja"), inArray(paymentTransactions.status, ["created", "pending"])));
   const statusHref = `/checkout/${ref}/status${token ? `?access=${token}` : ""}`;
+  // A plan whose deposit request was already sent is managed from the booking page.
+  const existingPlan = await loadPlan(booking.id);
+  if (existingPlan && existingPlan.plan.status !== "awaiting_deposit") redirect(`/bookings/${ref}${token ? `?access=${token}` : ""}`);
+  const offer = booking.status === "pending" ? await planOfferForBooking(booking, event) : null;
 
   const summary = (
     <OrderSummary
@@ -84,15 +91,42 @@ export default async function PaymentPage({ params, searchParams }: PageProps<"/
               Check your phone and enter your PIN there. <a href={statusHref} className="underline">See payment status</a> — don&apos;t pay twice.
             </Alert>
           )}
-          <PaymentForm
-            reference={booking.reference}
-            access={token}
-            idempotencyKey={`pay_${randomToken(18)}`}
-            phone={formatPhone(booking.buyerPhone)}
-            totalMinor={booking.totalMinor}
-            failed={booking.paymentStatus === "failed"}
-            modes={checkoutPaymentModes()}
-          />
+          {(() => {
+            const full = (
+              <PaymentForm
+                reference={booking.reference}
+                access={token}
+                idempotencyKey={`pay_${randomToken(18)}`}
+                phone={formatPhone(booking.buyerPhone)}
+                totalMinor={booking.totalMinor}
+                failed={booking.paymentStatus === "failed"}
+                modes={checkoutPaymentModes()}
+              />
+            );
+            if (!offer?.available) return full;
+            return (
+              <PaymentChoice
+                full={full}
+                plan={
+                  <PlanCheckoutForm
+                    reference={booking.reference}
+                    access={token}
+                    idempotencyKey={`plan_${randomToken(18)}`}
+                    phone={formatPhone(booking.buyerPhone)}
+                    totalMinor={booking.totalMinor}
+                    refundPolicy={event.refundPolicy}
+                    terms={offer.terms}
+                    options={offer.options.map((o) => ({
+                      installmentCount: o.installmentCount,
+                      depositMinor: o.depositMinor,
+                      finalDueLabel: formatDateTime(o.finalDueAt, event.timezone),
+                      lines: o.lines.map((l) => ({ sequence: l.sequence, amountMinor: l.amountMinor, dueLabel: formatDateTime(l.dueAt, event.timezone) })),
+                    }))}
+                  />
+                }
+              />
+            );
+          })()}
           <form action={cancelCheckoutAction} className="text-center">
             <input type="hidden" name="reference" value={booking.reference} />
             <input type="hidden" name="access" value={token ?? ""} />

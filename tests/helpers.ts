@@ -25,7 +25,7 @@ export const failingTransport: EmailTransport = {
 };
 
 export async function resetDb() {
-  await db.execute(sql`TRUNCATE audit_logs, jobs, email_provider_events, email_suppressions, email_deliveries, platform_settings, ledger_entries, refunds,
+  await db.execute(sql`TRUNCATE audit_logs, jobs, banner_generations, plan_installments, payment_plans, email_provider_events, email_suppressions, email_deliveries, platform_settings, ledger_entries, refunds,
     check_ins, tickets, payment_events, payment_transactions, booking_items, bookings, ticket_types,
     event_reports, events, organizer_profiles, password_reset_tokens, sessions, users CASCADE`);
   await db.insert(platformSettings).values({ key: "commission_bps", value: 500 });

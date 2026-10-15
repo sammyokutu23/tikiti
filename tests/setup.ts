@@ -11,7 +11,7 @@ process.env.MPESA_PROVIDER = "mock";
 process.env.CARD_PROVIDER = "mock";
 process.env.EMAIL_TRANSPORT = "dev-capture";
 for (const k of Object.keys(process.env)) {
-  if (k.startsWith("DARAJA_") || k.startsWith("RESEND_") || k.startsWith("SUPABASE_") || ["CLERK_WEBHOOK_SIGNING_SECRET", "CRON_SECRET", "STORAGE_DRIVER"].includes(k)) delete process.env[k];
+  if (k.startsWith("DARAJA_") || k.startsWith("RESEND_") || k.startsWith("SUPABASE_") || k.startsWith("OPENAI_") || ["CLERK_WEBHOOK_SIGNING_SECRET", "CRON_SECRET", "STORAGE_DRIVER"].includes(k)) delete process.env[k];
 }
 
 const { setEmailTransportOverride } = await import("@/server/email/transport");

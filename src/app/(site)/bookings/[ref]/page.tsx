@@ -12,6 +12,9 @@ import { bookingDetail } from "@/server/bookings/queries";
 import { buildQrPayload } from "@/server/tickets/qr";
 import { claimBookingAction } from "../actions";
 import { ResendTicketsForm } from "../forms";
+import { PlanPanel } from "../plan-panel";
+import { Flash } from "@/components/dash/flash";
+import { planView } from "@/server/plans/service";
 
 export const metadata = { title: "Your booking", robots: { index: false } };
 
@@ -52,6 +55,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
     );
   }
   const d = (await bookingDetail(access.booking.id))!;
+  const plan = await planView(access.booking.id);
   const { booking, event } = d;
   const q = access.token ? `?access=${encodeURIComponent(access.token)}` : "";
   const tz = event.timezone;
@@ -68,6 +72,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
+      <Flash sp={sp} />
       {sp.welcome && confirmed && (
         <Alert tone="success" title="Booking confirmed!">
           Your tickets are below and on their way to {booking.buyerEmail}.
@@ -97,8 +102,12 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
             <Alert tone="danger" title="This event was cancelled">{event.cancellationReason} Your booking has been refunded.</Alert>
           )}
 
+          {plan && (
+            <PlanPanel view={plan} reference={booking.reference} access={access.token} timezone={tz} phone={booking.buyerPhone} />
+          )}
+
           {!confirmed ? (
-            <Card className="p-5">
+            plan ? null : <Card className="p-5">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={booking.status} />
                 <StatusBadge status={booking.paymentStatus} />

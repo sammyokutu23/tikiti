@@ -18,6 +18,9 @@ import { setEventHidden, setOrganizerVerification } from "@/server/organizers/se
 import { checkMpesaPaymentStatus, resolveMpesaPayment } from "@/server/payments/mpesa";
 import { completeRefund } from "@/server/payments/service";
 import { MAX_COMMISSION_BPS, setCommissionBps, getCommissionBps } from "@/server/settings";
+import { bannerLimitsSchema, setBannerLimits } from "@/server/banners/service";
+import { planPolicySchema, setPlanPolicy } from "@/server/plans/policy";
+import { adminCancelPlan, adminResolveLatePayment } from "@/server/plans/service";
 
 const back = (fd: FormData, fallback: string) => {
   const b = String(fd.get("back") ?? "");
@@ -236,5 +239,69 @@ export async function recordManualRefundAction(fd: FormData) {
     if (!refund || refund.status !== "manual_required" || !refund.paymentTransactionId) throw new UserError("This refund isn't awaiting a manual reversal.");
     await completeRefund(refund.id, refund.paymentTransactionId, reference, admin.id);
     return "Refund recorded as completed.";
+  });
+}
+
+export async function setBannerLimitsAction(fd: FormData) {
+  const admin = await requireAdmin();
+  await run(fd, "/admin/ai-banners", async () => {
+    const num = (k: string) => Number(fd.get(k));
+    const parsed = bannerLimitsSchema.safeParse({
+      enabled: fd.get("enabled") === "on",
+      imagesPerOrganizerPerDay: num("imagesPerOrganizerPerDay"),
+      imagesPerOrganizerPerMonth: num("imagesPerOrganizerPerMonth"),
+      imagesPlatformPerMonth: num("imagesPlatformPerMonth"),
+      maxImagesPerRequest: num("maxImagesPerRequest"),
+      requestsPerUserPerMinute: num("requestsPerUserPerMinute"),
+    });
+    if (!parsed.success) throw new UserError(`Invalid limits: ${parsed.error.issues.map((i) => `${i.path.join(".")} ${i.message}`).join("; ")}`);
+    await setBannerLimits(parsed.data, admin);
+    return "AI banner limits saved.";
+  });
+}
+
+export async function setPlanPolicyAction(fd: FormData) {
+  const admin = await requireAdmin();
+  await run(fd, "/admin/payment-plans", async () => {
+    const num = (k: string) => Number(fd.get(k));
+    const parsed = planPolicySchema.safeParse({
+      enabled: fd.get("enabled") === "on",
+      depositBps: Math.round(num("depositPercent") * 100),
+      installmentOptions: fd.getAll("installmentOptions").map(Number),
+      minDaysBeforeEvent: num("minDaysBeforeEvent"),
+      finalDeadlineHours: num("finalDeadlineHours"),
+      minDaysBetweenPayments: num("minDaysBetweenPayments"),
+      overdueGraceHours: num("overdueGraceHours"),
+      reminderDaysBefore: num("reminderDaysBefore"),
+      minBookingTotalKes: num("minBookingTotalKes"),
+      minInstallmentKes: num("minInstallmentKes"),
+      cancellationFeeBps: Math.round(num("cancellationFeePercent") * 100),
+    });
+    if (!parsed.success) throw new UserError(`Invalid policy: ${parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ")}`);
+    await setPlanPolicy(parsed.data, admin);
+    return "Installment policy saved. It applies to new plans only — existing plans keep the terms customers accepted.";
+  });
+}
+
+export async function adminCancelPlanAction(fd: FormData) {
+  const admin = await requireAdmin();
+  const id = String(fd.get("planId") ?? "");
+  await run(fd, `/admin/payment-plans/${id}`, async () => {
+    const reason = String(fd.get("reason") ?? "").trim();
+    if (reason.length < 5) throw new UserError("Give a short reason (it's recorded in the audit log).");
+    const r = await adminCancelPlan(id, admin, reason);
+    await processDueJobs(5);
+    return r.refundMinor > 0 ? `Plan cancelled; refund of KES ${(r.refundMinor / 100).toLocaleString("en-KE")} started.` : "Plan cancelled.";
+  });
+}
+
+export async function resolveLatePlanPaymentAction(fd: FormData) {
+  const admin = await requireAdmin();
+  const id = String(fd.get("planId") ?? "");
+  await run(fd, `/admin/payment-plans/${id}`, async () => {
+    const action = fd.get("resolution") === "reinstate" ? "reinstate" : "refund";
+    const msg = await adminResolveLatePayment(id, admin, action);
+    await processDueJobs(5);
+    return msg;
   });
 }

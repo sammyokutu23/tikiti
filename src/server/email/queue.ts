@@ -13,6 +13,15 @@ export type EmailKind =
   | "refund_completed"
   | "payment_failed"
   | "payment_review"
+  // customer — Lipa Mdogo Mdogo payment plans
+  | "plan_deposit_confirmed"
+  | "plan_payment_confirmed"
+  | "plan_payment_failed"
+  | "plan_installment_due"
+  | "plan_installment_overdue"
+  | "plan_final_deadline"
+  | "plan_ended"
+  | "plan_payment_review"
   // customer — event lifecycle
   | "event_reminder"
   | "event_updated"
@@ -38,6 +47,9 @@ export const CRITICAL_KINDS: ReadonlySet<EmailKind> = new Set([
   "refund_completed",
   "event_updated",
   "account_email",
+  "plan_deposit_confirmed",
+  "plan_payment_confirmed",
+  "plan_ended",
 ]);
 
 const SUBJECT_PLACEHOLDER: Record<EmailKind, string> = {
@@ -48,6 +60,14 @@ const SUBJECT_PLACEHOLDER: Record<EmailKind, string> = {
   refund_completed: "Refund completed",
   payment_failed: "Payment not completed",
   payment_review: "Confirming your payment",
+  plan_deposit_confirmed: "Payment plan active",
+  plan_payment_confirmed: "Installment received",
+  plan_payment_failed: "Installment not completed",
+  plan_installment_due: "Installment due soon",
+  plan_installment_overdue: "Installment overdue",
+  plan_final_deadline: "Final payment deadline",
+  plan_ended: "Payment plan ended",
+  plan_payment_review: "Confirming your installment",
   event_reminder: "Event reminder",
   event_updated: "Event update",
   organizer_event_published: "Event published",

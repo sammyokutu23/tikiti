@@ -10,7 +10,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["pdf-lib", "qrcode", "nodemailer", "bcryptjs", "pg"],
+  serverExternalPackages: ["pdf-lib", "qrcode", "nodemailer", "bcryptjs", "pg", "sharp"],
+  // Fonts for AI banner composition are read from disk at runtime (src/server/banners/compose.tsx).
+  outputFileTracingIncludes: {
+    "/organizer/**": ["./assets/fonts/**"],
+    "/api/organizer/**": ["./assets/fonts/**"],
+  },
   images: {
     // Event images are served pre-sized (Unsplash params / uploaded files).
     unoptimized: true,

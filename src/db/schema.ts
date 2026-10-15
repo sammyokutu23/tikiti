@@ -18,6 +18,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  type AnyPgColumn,
   text,
   timestamp,
   uniqueIndex,
@@ -61,6 +62,7 @@ export const bookingStatus = pgEnum("booking_status", [
   "cancelled", // customer abandoned / event cancelled before payment
   "failed", // payment succeeded too late and inventory was gone → refunded
   "refunded",
+  "on_plan", // Lipa Mdogo Mdogo: deposit paid, inventory held until the plan is paid off (no tickets yet)
 ]);
 export const bookingPaymentStatus = pgEnum("booking_payment_status", [
   "unpaid",
@@ -70,6 +72,7 @@ export const bookingPaymentStatus = pgEnum("booking_payment_status", [
   "refund_pending",
   "refunded",
   "not_required",
+  "partially_paid", // payment plan in progress
 ]);
 /** Where the booking's units are counted on ticket_types. */
 export const inventoryState = pgEnum("inventory_state", ["held", "committed", "released"]);
@@ -127,6 +130,35 @@ export const emailStatus = pgEnum("email_status", [
   "skipped",
 ]);
 export const jobStatus = pgEnum("job_status", ["pending", "running", "succeeded", "failed"]);
+/**
+ * Lipa Mdogo Mdogo plan lifecycle (layaway, no interest or penalties):
+ *   awaiting_deposit ──deposit verified──▶ active ──balance verified──▶ fully_paid (tickets issued)
+ *   awaiting_deposit ──hold lapsed / checkout cancelled──▶ expired
+ *   active ──missed deadline / customer or admin cancel / event cancelled──▶ refund_pending ──refunds settled──▶ refunded
+ *   (nothing paid yet → cancelled / expired directly)
+ *   any ended plan ──payment verified afterwards──▶ reconciliation_required (admin reinstates or refunds)
+ */
+export const planStatus = pgEnum("payment_plan_status", [
+  "awaiting_deposit",
+  "active",
+  "fully_paid",
+  "cancelled",
+  "expired",
+  "refund_pending",
+  "refunded",
+  "reconciliation_required",
+]);
+/** Per-installment state; payment attempts keep their own status in payment_transactions. */
+export const installmentStatus = pgEnum("installment_status", [
+  "scheduled",
+  "due",
+  "payment_pending",
+  "paid",
+  "failed",
+  "overdue",
+  "cancelled",
+]);
+export const bannerGenerationStatus = pgEnum("banner_generation_status", ["pending", "succeeded", "failed"]);
 
 // ─── Identity ───────────────────────────────────────────────────────────────
 
@@ -234,6 +266,8 @@ export const events = pgTable(
     status: eventStatus("status").notNull().default("draft"),
     seatingMode: seatingMode("seating_mode").notNull().default("general_admission"),
     refundPolicy: text("refund_policy").notNull().default(""),
+    /** Organizer opt-in for Lipa Mdogo Mdogo installment plans. */
+    installmentsEnabled: boolean("installments_enabled").notNull().default(false),
     isFeatured: boolean("is_featured").notNull().default(false),
     /** Admin moderation: hidden events never appear publicly regardless of status. */
     isHidden: boolean("is_hidden").notNull().default(false),
@@ -396,6 +430,8 @@ export const paymentTransactions = pgTable(
     failureReason: text("failure_reason"),
     /** M-Pesa MerchantRequestID (returned with the CheckoutRequestID). */
     merchantRequestId: text("merchant_request_id"),
+    /** Set when this attempt pays one installment of a payment plan (amount = that installment). */
+    installmentId: uuid("installment_id").references((): AnyPgColumn => planInstallments.id),
     /** Provider receipt, e.g. the M-Pesa receipt number. One receipt pays one attempt. */
     providerReceipt: text("provider_receipt").unique(),
     providerResultCode: text("provider_result_code"),
@@ -410,6 +446,7 @@ export const paymentTransactions = pgTable(
   },
   (t) => [
     index("payment_transactions_booking_idx").on(t.bookingId),
+    index("payment_transactions_installment_idx").on(t.installmentId),
     index("payment_transactions_status_check_idx")
       .on(t.nextStatusCheckAt)
       .where(sql`${t.status} IN ('created', 'pending')`),
@@ -554,6 +591,114 @@ export const platformSettings = pgTable("platform_settings", {
   updatedAt: updatedAt(),
 });
 
+// ─── Payment plans (Lipa Mdogo Mdogo) ───────────────────────────────────────
+
+export const paymentPlans = pgTable(
+  "payment_plans",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .unique()
+      .references(() => bookings.id, { onDelete: "restrict" }),
+    status: planStatus("status").notNull().default("awaiting_deposit"),
+    currency: text("currency").notNull().default("KES"),
+    /** Agreed amounts, fixed at creation; later price or policy changes never alter them. */
+    totalMinor: integer("total_minor").notNull(),
+    depositMinor: integer("deposit_minor").notNull(),
+    /** Sum of verified installment payments applied to this plan. */
+    paidMinor: integer("paid_minor").notNull().default(0),
+    /** Installments after the deposit. */
+    installmentCount: integer("installment_count").notNull(),
+    /** Everything must be paid by this instant (event start minus the policy's final-deadline window). */
+    finalDueAt: ts("final_due_at").notNull(),
+    /** Retained on cancellation/expiry (0 under the default policy: full refund). */
+    cancellationFeeMinor: integer("cancellation_fee_minor").notNull().default(0),
+    /** Snapshot of the installment policy the customer accepted. */
+    policy: jsonb("policy").notNull(),
+    termsVersion: text("terms_version").notNull(),
+    termsAcceptedAt: ts("terms_accepted_at").notNull(),
+    activatedAt: ts("activated_at"),
+    completedAt: ts("completed_at"),
+    endedAt: ts("ended_at"),
+    /** missed_installment | deadline_passed | customer_cancelled | admin_cancelled | event_cancelled | hold_expired */
+    endReason: text("end_reason"),
+    reconciliationNote: text("reconciliation_note"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("payment_plans_status_idx").on(t.status, t.finalDueAt),
+    check("payment_plans_amounts", sql`${t.depositMinor} > 0 AND ${t.depositMinor} <= ${t.totalMinor} AND ${t.paidMinor} >= 0 AND ${t.paidMinor} <= ${t.totalMinor} AND ${t.cancellationFeeMinor} >= 0`),
+    check("payment_plans_installments", sql`${t.installmentCount} BETWEEN 1 AND 12`),
+  ],
+);
+
+export const planInstallments = pgTable(
+  "plan_installments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    planId: uuid("plan_id")
+      .notNull()
+      .references(() => paymentPlans.id, { onDelete: "cascade" }),
+    /** 0 = deposit, 1..n = installments, paid strictly in order. */
+    sequence: integer("sequence").notNull(),
+    amountMinor: integer("amount_minor").notNull(),
+    dueAt: ts("due_at").notNull(),
+    status: installmentStatus("status").notNull().default("scheduled"),
+    /** The verified payment that settled this installment (exactly one). */
+    paymentTransactionId: uuid("payment_transaction_id").references((): AnyPgColumn => paymentTransactions.id),
+    paidAt: ts("paid_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    unique("plan_installments_plan_sequence_uq").on(t.planId, t.sequence),
+    uniqueIndex("plan_installments_payment_uq").on(t.paymentTransactionId),
+    index("plan_installments_due_idx").on(t.status, t.dueAt),
+    check("plan_installments_amount", sql`${t.amountMinor} > 0`),
+  ],
+);
+
+// ─── AI banner generations ──────────────────────────────────────────────────
+
+/** One row per generation request (n images). Pending rows count toward usage limits. */
+export const bannerGenerations = pgTable(
+  "banner_generations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    organizerId: uuid("organizer_id")
+      .notNull()
+      .references(() => organizerProfiles.id),
+    eventId: uuid("event_id")
+      .notNull()
+      .references(() => events.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => users.id),
+    status: bannerGenerationStatus("status").notNull().default("pending"),
+    model: text("model").notNull(),
+    style: text("style").notNull(),
+    format: text("format").notNull(),
+    size: text("size").notNull(),
+    quality: text("quality").notNull(),
+    imageCount: integer("image_count").notNull(),
+    /** The organizer's own creative brief. The full provider prompt is internal and not stored. */
+    brief: text("brief").notNull().default(""),
+    /** Stored background artwork (no event text), one URL per generated image. */
+    imageUrls: jsonb("image_urls").notNull().default([]),
+    errorCategory: text("error_category"),
+    errorMessage: text("error_message"),
+    completedAt: ts("completed_at"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("banner_generations_org_idx").on(t.organizerId, t.createdAt),
+    index("banner_generations_event_idx").on(t.eventId, t.createdAt),
+    // One request in flight per organizer: double clicks can't start parallel (billed) generations.
+    uniqueIndex("banner_generations_one_pending_uq").on(t.organizerId).where(sql`${t.status} = 'pending'`),
+    check("banner_generations_count", sql`${t.imageCount} BETWEEN 1 AND 4`),
+  ],
+);
+
 // ─── Email & jobs ───────────────────────────────────────────────────────────
 
 export const emailDeliveries = pgTable(
@@ -682,3 +827,6 @@ export type BookingItem = typeof bookingItems.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;
 export type PaymentTransaction = typeof paymentTransactions.$inferSelect;
 export type EmailDelivery = typeof emailDeliveries.$inferSelect;
+export type PaymentPlan = typeof paymentPlans.$inferSelect;
+export type PlanInstallment = typeof planInstallments.$inferSelect;
+export type BannerGeneration = typeof bannerGenerations.$inferSelect;

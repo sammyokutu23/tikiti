@@ -85,13 +85,17 @@ export async function startMpesaPayment(args: {
   payerPhone: string;
   idempotencyKey: string;
   returnUrl: string;
+  /** Defaults to the booking total; a plan installment passes its own amount. */
+  amountMinor?: number;
+  installmentId?: string | null;
 }): Promise<{ redirectUrl: string; paymentId: string }> {
   const { booking } = args;
+  const amountMinor = args.amountMinor ?? booking.totalMinor;
   const phone = normalizeKenyanPhone(args.payerPhone);
   if (!phone) throw new UserError("Enter a valid Safaricom M-Pesa number, e.g. 0712 345 678.");
   if (booking.currency !== "KES") throw new UserError("M-Pesa payments must be in KES.");
-  if (booking.totalMinor % 100 !== 0) throw new UserError("M-Pesa only accepts whole shillings. Please contact the organizer.");
-  if (booking.totalMinor > MPESA_MAX_KES * 100) {
+  if (amountMinor % 100 !== 0) throw new UserError("M-Pesa only accepts whole shillings. Please contact the organizer.");
+  if (amountMinor > MPESA_MAX_KES * 100) {
     throw new UserError(`M-Pesa payments are limited to KES ${MPESA_MAX_KES.toLocaleString("en-KE")} per transaction. Please reduce your order.`);
   }
 
@@ -127,10 +131,11 @@ export async function startMpesaPayment(args: {
         provider: PROVIDER,
         method: "mpesa",
         status: "created",
-        amountMinor: booking.totalMinor,
+        amountMinor,
         currency: booking.currency,
         idempotencyKey: args.idempotencyKey,
         payerPhone: phone,
+        installmentId: args.installmentId ?? null,
         nextStatusCheckAt: new Date(Date.now() + UNCERTAIN_WINDOW_MS),
       })
       .returning();
@@ -144,10 +149,10 @@ export async function startMpesaPayment(args: {
 
   try {
     const accepted = await stkPush(cfg, {
-      amountKes: booking.totalMinor / 100,
+      amountKes: amountMinor / 100,
       phone,
       accountReference: booking.reference,
-      description: "Event tickets",
+      description: args.installmentId ? "Ticket installment" : "Event tickets",
     });
     const now = new Date();
     await db.transaction(async (tx) => {

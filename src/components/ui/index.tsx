@@ -237,6 +237,15 @@ const STATUS: Record<string, [string, Tone]> = {
   resolved: ["Resolved", "success"],
   dismissed: ["Dismissed", "neutral"],
   active: ["Active", "success"],
+  // payment plans (Lipa Mdogo Mdogo)
+  on_plan: ["Payment plan", "info"],
+  partially_paid: ["Partly paid", "info"],
+  awaiting_deposit: ["Awaiting deposit", "warning"],
+  fully_paid: ["Fully paid", "success"],
+  scheduled: ["Upcoming", "neutral"],
+  due: ["Due", "warning"],
+  payment_pending: ["Processing", "warning"],
+  overdue: ["Overdue", "danger"],
 };
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {

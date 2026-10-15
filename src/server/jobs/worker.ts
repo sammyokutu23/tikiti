@@ -1,10 +1,12 @@
 import { expireStaleBookings } from "../bookings/lifecycle";
 import { scheduleEventReminders } from "../email/notify";
 import { reconcileMpesaPayments } from "../payments/mpesa";
+import { runPlanMaintenance } from "../plans/apply";
 import { processDueJobs } from "./queue";
 
 let running = false;
 let lastReminderScan = 0;
+let lastPlanScan = 0;
 
 /** One maintenance tick: release lapsed holds, reconcile overdue M-Pesa attempts, schedule reminders, then run due outbox jobs. */
 export async function workerTick() {
@@ -16,6 +18,10 @@ export async function workerTick() {
     if (Date.now() - lastReminderScan > 5 * 60_000) {
       lastReminderScan = Date.now();
       await scheduleEventReminders().catch((err) => console.error("[worker] reminder scheduling failed:", (err as Error).message));
+    }
+    if (Date.now() - lastPlanScan > 60_000) {
+      lastPlanScan = Date.now();
+      await runPlanMaintenance().catch((err) => console.error("[worker] payment-plan maintenance failed:", (err as Error).message));
     }
     for (let i = 0; i < 5; i++) {
       const r = await processDueJobs(10);

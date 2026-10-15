@@ -46,6 +46,16 @@ items below.
   `STORAGE_DRIVER=supabase` with `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` to store uploads in a
   public Supabase Storage bucket. Uploads are capped at 4 MB, because Vercel rejects request bodies over 4.5 MB.
 
+### Payment plans & AI banners
+
+- Run `npm run db:migrate` before deploying code that includes `drizzle/0006_plans_and_banners.sql`
+  (additive: new tables and columns plus new enum values), then enable RLS on the three new tables in
+  Supabase.
+- Lipa Mdogo Mdogo needs the worker tick (`/api/cron/tick`) for reminders and expiry. See
+  [INSTALLMENTS.md](INSTALLMENTS.md).
+- AI banners need `OPENAI_API_KEY` and `OPENAI_IMAGE_MODEL` (server-only), plus persistent storage
+  (`STORAGE_DRIVER=supabase`). See [AI_BANNERS.md](AI_BANNERS.md).
+
 ### Vercel + Supabase
 
 1. Set `DATABASE_URL` to the Supabase **transaction pooler** URL (port 6543) and run

@@ -9,6 +9,7 @@ import { releaseSoldInventory } from "../inventory";
 import { enqueueJob } from "../jobs/queue";
 import { recordRefundLedger } from "../ledger";
 import { bookingLines, cancelPendingBooking, lockBooking } from "./lifecycle";
+import { endPlan } from "../plans/apply";
 
 /**
  * Full refund of a confirmed booking (prototype supports whole-booking refunds).
@@ -25,10 +26,12 @@ export async function refundBooking(
   if (booking.status !== "confirmed") throw new UserError(`Only confirmed bookings can be refunded (status: ${booking.status}).`);
 
   const [event] = await tx.select().from(events).where(eq(events.id, booking.eventId));
-  const [payment] = await tx
+  // A plan-paid booking has one succeeded payment per installment; each is refunded separately.
+  const payments = await tx
     .select()
     .from(paymentTransactions)
-    .where(and(eq(paymentTransactions.bookingId, booking.id), eq(paymentTransactions.status, "succeeded")));
+    .where(and(eq(paymentTransactions.bookingId, booking.id), eq(paymentTransactions.status, "succeeded")))
+    .orderBy(paymentTransactions.createdAt);
 
   const isFree = booking.totalMinor === 0;
   await tx
@@ -51,26 +54,32 @@ export async function refundBooking(
 
   let refundId: string | null = null;
   if (!isFree) {
-    const [refund] = await tx
-      .insert(refunds)
-      .values({
-        bookingId: booking.id,
-        paymentTransactionId: payment?.id ?? null,
-        amountMinor: booking.totalMinor,
-        commissionReversedMinor: booking.commissionMinor,
-        reason: args.reason,
-        initiatedBy: args.actorUserId,
-      })
-      .returning();
-    refundId = refund.id;
-    await recordRefundLedger(tx, {
-      booking,
-      organizerId: event.organizerId,
-      refundId: refund.id,
-      amountMinor: booking.subtotalMinor,
-      commissionReversedMinor: booking.commissionMinor,
-    });
-    await enqueueJob(tx, "refund.process", { refundId: refund.id }, { dedupeKey: `refund:${refund.id}` });
+    // Split the booking total across the payments that made it up (one row when paid in full).
+    const parts = payments.length > 1 ? payments.map((p) => ({ paymentId: p.id, amountMinor: p.amountMinor })) : [{ paymentId: payments[0]?.id ?? null, amountMinor: booking.totalMinor }];
+    for (const [i, part] of parts.entries()) {
+      const [refund] = await tx
+        .insert(refunds)
+        .values({
+          bookingId: booking.id,
+          paymentTransactionId: part.paymentId,
+          amountMinor: part.amountMinor,
+          commissionReversedMinor: i === 0 ? booking.commissionMinor : 0,
+          reason: args.reason,
+          initiatedBy: args.actorUserId,
+        })
+        .returning();
+      if (i === 0) {
+        refundId = refund.id;
+        await recordRefundLedger(tx, {
+          booking,
+          organizerId: event.organizerId,
+          refundId: refund.id,
+          amountMinor: booking.subtotalMinor,
+          commissionReversedMinor: booking.commissionMinor,
+        });
+      }
+      await enqueueJob(tx, "refund.process", { refundId: refund.id }, { dedupeKey: `refund:${refund.id}` });
+    }
   }
 
   if (args.notify !== false) {
@@ -130,13 +139,18 @@ export async function cancelEvent(args: { eventId: string; actorUserId: string; 
     const affected = await tx
       .select({ id: bookings.id, status: bookings.status })
       .from(bookings)
-      .where(and(eq(bookings.eventId, event.id), inArray(bookings.status, ["confirmed", "pending"])));
+      .where(and(eq(bookings.eventId, event.id), inArray(bookings.status, ["confirmed", "pending", "on_plan"])));
 
     let refunded = 0;
     for (const b of affected) {
       if (b.status === "pending") {
         const locked = await lockBooking(tx, b.id);
         if (locked) await cancelPendingBooking(tx, locked, "event_cancelled");
+      } else if (b.status === "on_plan") {
+        // Installment plan in progress: release the tickets and refund everything paid (no fee).
+        await lockBooking(tx, b.id);
+        await endPlan(tx, b.id, "event_cancelled", args.actorUserId);
+        refunded++;
       } else {
         await refundBooking(tx, {
           bookingId: b.id,

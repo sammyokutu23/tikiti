@@ -12,6 +12,7 @@ export default async function OrganizerLayout({ children }: { children: React.Re
         { href: "/organizer", label: "Overview", exact: true },
         { href: "/organizer/events", label: "Events" },
         { href: "/organizer/bookings", label: "Bookings" },
+        { href: "/organizer/payment-plans", label: "Payment plans" },
       ]}
     >
       {children}

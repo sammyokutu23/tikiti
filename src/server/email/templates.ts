@@ -83,6 +83,8 @@ export type BookingEmailData = {
   arrivalInstructions?: string;
   /** PDF wasn't attached (too large / unavailable): the email must point to the download link. */
   attachmentOmitted?: boolean;
+  /** Final tickets after a Lipa Mdogo Mdogo plan was paid off. */
+  planCompleted?: boolean;
 };
 
 function whenWhere(d: BookingEmailData) {
@@ -122,6 +124,7 @@ export function bookingConfirmationEmail(d: BookingEmailData): Rendered {
     body: `${eyebrow("Booking confirmed")}
 ${h1(`You're going to ${esc(d.eventTitle)}!`)}
 ${para(intro)}
+${d.planCompleted ? note("<b>Lipa Mdogo Mdogo complete.</b> Your payment plan is fully paid, so your entry tickets are now valid.") : ""}
 ${whenWhere(d)}
 ${d.arrivalInstructions ? note(`<b>Arrival:</b> ${esc(d.arrivalInstructions)}`) : ""}
 ${ticketRows ? `<table role="presentation" width="100%" style="font-size:14px;border-collapse:collapse;margin-bottom:12px">${ticketRows}</table>` : ""}
@@ -132,6 +135,7 @@ ${para("This link is private to you — don't share it. Each QR code can be scan
   });
   const text = textBlock([
     `You're going to ${d.eventTitle}!`,
+    d.planCompleted && "Your Lipa Mdogo Mdogo plan is fully paid, so your entry tickets are now valid.",
     "",
     `Booking reference: ${d.reference}`,
     `When: ${formatDateTime(d.startsAt, d.timezone)}`,
@@ -399,4 +403,189 @@ ${d.reason ? note(`<b>Reason:</b> ${esc(d.reason)}`) : ""}
 <p style="margin:0 0 20px">${button(d.dashboardUrl, "Open dashboard")}</p>`,
   });
   return { subject, html, text: `${d.eventTitle} has been cancelled. ${d.bookingCount} booking(s) are being refunded.${d.reason ? `\nReason: ${d.reason}` : ""}\n${d.dashboardUrl}` };
+}
+
+// ─── Customer: Lipa Mdogo Mdogo payment plans ────────────────────────────────
+
+export type PlanEmailData = BookingEmailData & {
+  paidMinor: number;
+  outstandingMinor: number;
+  finalDueAt: Date;
+  schedule: { label: string; amountMinor: number; dueAt: Date; status: string }[];
+  next: { label: string; amountMinor: number; dueAt: Date } | null;
+};
+
+const STATUS_WORD: Record<string, string> = {
+  paid: "Paid",
+  scheduled: "Upcoming",
+  due: "Due",
+  payment_pending: "Processing",
+  failed: "Not paid",
+  overdue: "Overdue",
+  cancelled: "Cancelled",
+};
+
+function scheduleTable(d: PlanEmailData) {
+  const rows = d.schedule
+    .map(
+      (l) =>
+        `<tr><td style="padding:6px 0">${esc(l.label)}<br><span style="color:#777;font-size:12px">${esc(formatDateTime(l.dueAt, d.timezone))}</span></td><td align="right" style="padding:6px 0">${formatMoney(l.amountMinor, d.currency)}<br><span style="color:${l.status === "paid" ? "#15803d" : l.status === "overdue" ? "#b91c1c" : "#777"};font-size:12px">${esc(STATUS_WORD[l.status] ?? l.status)}</span></td></tr>`,
+    )
+    .join("");
+  return `<table role="presentation" width="100%" style="font-size:14px;border-collapse:collapse;border-top:1px solid #eee;border-bottom:1px solid #eee;margin-bottom:16px">${rows}
+<tr><td style="padding:8px 0;color:#777">Paid so far</td><td align="right">${formatMoney(d.paidMinor, d.currency)}</td></tr>
+<tr><td style="padding:4px 0 8px;font-weight:700">Balance</td><td align="right" style="font-weight:700">${formatMoney(d.outstandingMinor, d.currency)}</td></tr></table>`;
+}
+
+const scheduleText = (d: PlanEmailData) => [
+  ...d.schedule.map((l) => `${l.label}: ${formatMoney(l.amountMinor, d.currency)} — ${formatDateTime(l.dueAt, d.timezone)} (${STATUS_WORD[l.status] ?? l.status})`),
+  `Paid so far: ${formatMoney(d.paidMinor, d.currency)} · Balance: ${formatMoney(d.outstandingMinor, d.currency)}`,
+];
+
+const PIN_NOTE = "Each payment is a separate M-Pesa prompt that you approve on your phone. Tikiti will never ask for your M-Pesa PIN.";
+
+function planEmail(d: PlanEmailData, o: { subject: string; eyebrow: string; title: string; intro: string; preheader: string; noteHtml?: string; cta?: string; showSchedule?: boolean; extraText?: string[] }): Rendered {
+  const html = layout({
+    title: o.subject,
+    preheader: o.preheader,
+    audience: "customer",
+    supportEmail: d.supportEmail,
+    body: `${eyebrow(o.eyebrow)}
+${h1(o.title)}
+${para(o.intro)}
+${o.noteHtml ? note(o.noteHtml) : ""}
+${details([
+  ["Event", esc(d.eventTitle)],
+  ["When", esc(formatDateTime(d.startsAt, d.timezone))],
+  ["Booking reference", `<b>${esc(d.reference)}</b>`],
+])}
+${o.showSchedule === false ? "" : scheduleTable(d)}
+${o.cta ? `<p style="margin:0 0 20px">${button(d.ticketsUrl, o.cta)}</p>` : ""}
+${para(PIN_NOTE, true)}`,
+  });
+  const text = textBlock([
+    o.title,
+    "",
+    o.intro.replace(/<[^>]+>/g, ""),
+    ...(o.extraText ?? []),
+    "",
+    `Event: ${d.eventTitle} — ${formatDateTime(d.startsAt, d.timezone)}`,
+    `Booking reference: ${d.reference}`,
+    ...(o.showSchedule === false ? [] : ["", ...scheduleText(d)]),
+    "",
+    d.ticketsUrl,
+    "",
+    PIN_NOTE,
+    `Support: ${d.supportEmail}`,
+  ]);
+  return { subject: o.subject, html, text };
+}
+
+const nextLine = (d: PlanEmailData) =>
+  d.next ? `Next payment: <b>${formatMoney(d.next.amountMinor, d.currency)}</b> by ${esc(formatDateTime(d.next.dueAt, d.timezone))}.` : "";
+
+export function planDepositConfirmedEmail(d: PlanEmailData): Rendered {
+  return planEmail(d, {
+    subject: `Deposit received — your Lipa Mdogo Mdogo plan for ${d.eventTitle} is active`,
+    eyebrow: "Payment plan active",
+    title: "Your tickets are reserved",
+    preheader: `Deposit received. Balance ${formatMoney(d.outstandingMinor, d.currency)}.`,
+    intro: `Hi ${esc(firstName(d.buyerName))}, we've received your deposit and your Lipa Mdogo Mdogo plan is active. ${nextLine(d)}`,
+    noteHtml: `Your entry tickets (with QR codes) are issued as soon as the full balance is paid — at the latest by <b>${esc(formatDateTime(d.finalDueAt, d.timezone))}</b>. No interest and no late fees.`,
+    cta: "View plan & pay",
+  });
+}
+
+export function planPaymentConfirmedEmail(d: PlanEmailData & { amountMinor: number }): Rendered {
+  return planEmail(d, {
+    subject: `Installment received — ${formatMoney(d.outstandingMinor, d.currency)} left for ${d.eventTitle}`,
+    eyebrow: "Installment received",
+    title: `Thanks — ${formatMoney(d.amountMinor, d.currency)} received`,
+    preheader: `Balance ${formatMoney(d.outstandingMinor, d.currency)}.`,
+    intro: `Hi ${esc(firstName(d.buyerName))}, your installment for booking <b>${esc(d.reference)}</b> has been confirmed. ${nextLine(d)}`,
+    cta: "View plan & pay",
+  });
+}
+
+export function planPaymentFailedEmail(d: PlanEmailData & { reason: string }): Rendered {
+  return planEmail(d, {
+    subject: `Installment not completed — ${d.eventTitle}`,
+    eyebrow: "Payment not completed",
+    title: "Your installment didn't go through",
+    preheader: "No money was taken for this attempt.",
+    intro: `Hi ${esc(firstName(d.buyerName))}, the M-Pesa payment for your installment didn't go through: ${esc(d.reason)}. No money was taken for this attempt and your plan is still active. ${nextLine(d)}`,
+    cta: "Try again",
+  });
+}
+
+export function planInstallmentDueEmail(d: PlanEmailData): Rendered {
+  return planEmail(d, {
+    subject: `Reminder: ${d.next ? formatMoney(d.next.amountMinor, d.currency) : "an installment"} due for ${d.eventTitle}`,
+    eyebrow: "Installment due soon",
+    title: "Your next installment is coming up",
+    preheader: d.next ? `${formatMoney(d.next.amountMinor, d.currency)} due ${formatDateTime(d.next.dueAt, d.timezone)}.` : "Installment due soon.",
+    intro: `Hi ${esc(firstName(d.buyerName))}, a friendly reminder about your Lipa Mdogo Mdogo plan. ${nextLine(d)} You can pay early at any time.`,
+    cta: "Pay now with M-Pesa",
+  });
+}
+
+export function planInstallmentOverdueEmail(d: PlanEmailData & { graceEndsAt: Date }): Rendered {
+  return planEmail(d, {
+    subject: `Installment overdue — keep your tickets for ${d.eventTitle}`,
+    eyebrow: "Installment overdue",
+    title: "Your installment is overdue",
+    preheader: `Pay by ${formatDateTime(d.graceEndsAt, d.timezone)} to keep your tickets.`,
+    intro: `Hi ${esc(firstName(d.buyerName))}, we haven't received your installment yet. There's no late fee — but please pay by <b>${esc(formatDateTime(d.graceEndsAt, d.timezone))}</b> to keep your tickets.`,
+    noteHtml: "If the plan ends because of a missed payment, your tickets are released and the money you've paid is refunded as described in your plan terms.",
+    cta: "Pay now with M-Pesa",
+  });
+}
+
+export function planFinalDeadlineEmail(d: PlanEmailData): Rendered {
+  return planEmail(d, {
+    subject: `Final payment deadline for ${d.eventTitle}: ${formatDateTime(d.finalDueAt, d.timezone)}`,
+    eyebrow: "Final deadline approaching",
+    title: `${formatMoney(d.outstandingMinor, d.currency)} left to pay`,
+    preheader: `Pay by ${formatDateTime(d.finalDueAt, d.timezone)} to get your tickets.`,
+    intro: `Hi ${esc(firstName(d.buyerName))}, your balance must be paid by <b>${esc(formatDateTime(d.finalDueAt, d.timezone))}</b>. Once it's paid, your entry tickets are issued straight away.`,
+    cta: "Pay now with M-Pesa",
+  });
+}
+
+const END_REASON: Record<string, string> = {
+  missed_installment: "an installment wasn't paid in time",
+  deadline_passed: "the balance wasn't paid by the final deadline",
+  customer_cancelled: "you cancelled it",
+  admin_cancelled: "it was cancelled by Tikiti support",
+  event_cancelled: "the event was cancelled",
+};
+
+export function planEndedEmail(d: PlanEmailData & { reason: string; refundMinor: number; retainedMinor: number }): Rendered {
+  const why = END_REASON[d.reason] ?? "it ended";
+  const refund =
+    d.refundMinor > 0
+      ? `We've started a refund of <b>${formatMoney(d.refundMinor, d.currency)}</b> to the M-Pesa number you paid with. We'll email you again once it's completed.${d.retainedMinor > 0 ? ` A ${formatMoney(d.retainedMinor, d.currency)} cancellation fee was kept, as set out in the plan terms you accepted.` : ""}`
+      : "No payments had been made, so there's nothing to refund.";
+  return planEmail(d, {
+    subject: `Your payment plan for ${d.eventTitle} has ended`,
+    eyebrow: "Payment plan ended",
+    title: "Your payment plan has ended",
+    preheader: d.refundMinor > 0 ? `Refund of ${formatMoney(d.refundMinor, d.currency)} started.` : "Your reserved tickets were released.",
+    intro: `Hi ${esc(firstName(d.buyerName))}, your Lipa Mdogo Mdogo plan for booking <b>${esc(d.reference)}</b> ended because ${esc(why)}. The reserved tickets have been released.`,
+    noteHtml: refund,
+    showSchedule: false,
+    cta: d.reason === "event_cancelled" ? undefined : "View booking",
+  });
+}
+
+export function planPaymentReviewEmail(d: PlanEmailData): Rendered {
+  return planEmail(d, {
+    subject: `We're reviewing a payment on your plan — ${d.reference}`,
+    eyebrow: "Payment under review",
+    title: "We received a payment we need to check",
+    preheader: "Please don't pay again.",
+    intro: `Hi ${esc(firstName(d.buyerName))}, an M-Pesa payment for booking <b>${esc(d.reference)}</b> (${esc(d.eventTitle)}) arrived after your payment plan had ended. Our team is reviewing it.`,
+    noteHtml: "<b>Please don't pay again.</b> Your money is safe: either your plan is reinstated with the payment applied, or the payment is refunded. We'll email you with the outcome.",
+    showSchedule: false,
+  });
 }

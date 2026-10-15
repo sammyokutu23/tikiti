@@ -43,6 +43,13 @@
       "when": 1791878771496,
       "tag": "0005_resend_email",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792070139795,
+      "tag": "0006_plans_and_banners",
+      "breakpoints": true
     }
   ]
 }

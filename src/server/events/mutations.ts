@@ -34,6 +34,7 @@ export const eventFormSchema = z
     locationProvider: z.string().trim().max(40).default(""),
     locationPlaceId: z.string().trim().max(120).default(""),
     arrivalInstructions: z.string().trim().max(500, "Keep arrival instructions under 500 characters").default(""),
+    installmentsEnabled: z.string().default(""),
   })
   .transform((v, ctx) => {
     const loc = parseLocation(v, ctx);
@@ -43,7 +44,7 @@ export const eventFormSchema = z
     if (!endsAt) ctx.addIssue({ code: "custom", path: ["endsLocal"], message: "Invalid end date" });
     if (startsAt && endsAt && endsAt <= startsAt)
       ctx.addIssue({ code: "custom", path: ["endsLocal"], message: "End must be after start" });
-    return { ...v, startsAt: startsAt!, endsAt: endsAt!, location: loc };
+    return { ...v, startsAt: startsAt!, endsAt: endsAt!, location: loc, installmentsEnabled: v.installmentsEnabled === "on" };
   });
 
 export type ParsedLocation = { lat: number; lng: number; provider: string; placeId: string | null } | null;
@@ -117,6 +118,7 @@ export async function createEvent(
       refundPolicy: input.refundPolicy,
       coverImageUrl,
       arrivalInstructions: input.arrivalInstructions,
+      installmentsEnabled: input.installmentsEnabled,
       ...locationColumns(input.location),
       status: "draft",
     })
@@ -146,6 +148,7 @@ export async function updateEvent(event: Event, actor: User, input: z.output<typ
         refundPolicy: input.refundPolicy,
         coverImageUrl,
         arrivalInstructions: input.arrivalInstructions,
+        installmentsEnabled: input.installmentsEnabled,
         ...locationColumns(input.location, event),
         updatedAt: new Date(),
       })

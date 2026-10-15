@@ -25,9 +25,11 @@ import {
 } from "@/server/events/mutations";
 import { applyAsOrganizer, organizerApplicationSchema } from "@/server/organizers/service";
 import { saveEventImage } from "@/server/storage";
+import { generateEventBanners, parseOverlayOptions, saveBannerAsCover } from "@/server/banners/service";
+import { generateBannerSchema } from "@/server/banners/prompt";
 
 const EVENT_FIELDS = ["title", "summary", "description", "category", "venueName", "venueAddress", "city", "timezone", "startsLocal", "endsLocal", "refundPolicy", "coverImageUrl",
-  "latitude", "longitude", "locationConfirmed", "locationProvider", "locationPlaceId", "arrivalInstructions"];
+  "latitude", "longitude", "locationConfirmed", "locationProvider", "locationPlaceId", "arrivalInstructions", "installmentsEnabled"];
 
 export async function applyAction(_: FormState, fd: FormData): Promise<FormState> {
   const user = await requireUser("/organizer/apply");
@@ -174,4 +176,41 @@ export async function revokeTicketAction(fd: FormData) {
   const back = `/organizer/events/${ev.id}/tickets/${t.id}`;
   revalidatePath(back);
   redirect(withFlash(back, "ok", "Ticket revoked. It will be rejected at the gate."));
+}
+
+// ─── AI Banner Studio ────────────────────────────────────────────────────────
+
+export async function generateBannerAction(_: FormState, fd: FormData): Promise<FormState> {
+  const ctx = await requireOrganizer();
+  const ev = await requireOwnedEvent(String(fd.get("eventId")), ctx);
+  const values = formValues(fd, ["style", "format", "category", "brief", "refinement", "count"]);
+  const parsed = generateBannerSchema.safeParse(values);
+  if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error), values };
+  try {
+    const g = await generateEventBanners({ actor: ctx.user, event: ev, input: parsed.data });
+    revalidatePath(`/organizer/events/${ev.id}/banner`);
+    return { ok: true, message: `Generated ${g.imageCount} concept${g.imageCount === 1 ? "" : "s"}.`, nonce: Date.now(), values: { ...values, generationId: g.id } };
+  } catch (err) {
+    return { error: userMessage(err), values };
+  }
+}
+
+export async function saveBannerCoverAction(_: FormState, fd: FormData): Promise<FormState> {
+  const ctx = await requireOrganizer();
+  const ev = await requireOwnedEvent(String(fd.get("eventId")), ctx);
+  if (!rateLimit(`banner-save:${ctx.user.id}`, 10, 60_000).ok) return { error: "Too many attempts. Please wait a moment." };
+  try {
+    await saveBannerAsCover({
+      actor: ctx.user,
+      event: ev,
+      generationId: String(fd.get("generationId") ?? ""),
+      index: Number(fd.get("index") ?? 0),
+      opts: parseOverlayOptions((k) => (fd.has(k) ? String(fd.get(k)) : "0")),
+      confirmReplace: fd.get("confirmReplace") === "on",
+    });
+  } catch (err) {
+    return { error: userMessage(err) };
+  }
+  revalidatePath("/", "layout");
+  redirect(withFlash(`/organizer/events/${ev.id}`, "ok", "New cover saved. Your previous image is kept in storage."));
 }

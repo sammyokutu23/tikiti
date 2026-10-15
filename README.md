@@ -4,6 +4,8 @@ A mobile-first event ticketing marketplace. Customers discover events and buy ti
 checkout, KES). They get one QR-coded ticket per admission, as a PDF and by email. Organizers
 create and publish events, track sales and commission, and scan guests in from a phone.
 Admins verify organizers, moderate events, inspect transactions and configure commission.
+Buyers can also pay in installments with **Lipa Mdogo Mdogo** ([docs/INSTALLMENTS.md](docs/INSTALLMENTS.md)),
+and organizers can design event covers in the **AI Banner Studio** ([docs/AI_BANNERS.md](docs/AI_BANNERS.md)).
 
 > **Prototype:** payments are **simulated** by default (a mock provider with signed callbacks).
 > **M-Pesa via Safaricom Daraja (STK Push)** is integrated and can be switched on with
@@ -64,7 +66,8 @@ See [.env.example](.env.example). The required secrets are `SESSION_SECRET`,
 `QR_SIGNING_SECRET`, `ACCESS_LINK_SECRET` and `MOCK_PAYMENT_WEBHOOK_SECRET`. Email uses
 `EMAIL_TRANSPORT` (`dev-capture` | `resend` | `smtp` | `disabled`), the `RESEND_*` settings
 ([docs/EMAIL.md](docs/EMAIL.md)), `SMTP_URL`, `EMAIL_FROM` and `SUPPORT_EMAIL`. Also:
-`PAYMENT_PROVIDER`, `STORAGE_DRIVER`, `JOBS_INLINE_WORKER` and `APP_BASE_URL`.
+`PAYMENT_PROVIDER`, `STORAGE_DRIVER`, `JOBS_INLINE_WORKER` and `APP_BASE_URL`. AI banners use
+`OPENAI_API_KEY`, `OPENAI_IMAGE_MODEL` and `OPENAI_IMAGE_QUALITY` ([docs/AI_BANNERS.md](docs/AI_BANNERS.md)).
 
 ## Docs
 
@@ -73,6 +76,8 @@ See [.env.example](.env.example). The required secrets are `SESSION_SECRET`,
 - [Reserved seating boundary](docs/RESERVED_SEATING.md)
 - [Event maps & venue location](docs/MAPS.md)
 - [M-Pesa (Daraja) payments: setup, sandbox, go-live, reconciliation](docs/MPESA.md)
+- [Lipa Mdogo Mdogo installment plans](docs/INSTALLMENTS.md)
+- [AI Banner Studio (OpenAI)](docs/AI_BANNERS.md)
 - [Production checklist](docs/PRODUCTION.md)
 - Design reference: [docs/design-reference.png](docs/design-reference.png)
 

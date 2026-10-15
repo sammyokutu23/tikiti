@@ -9,13 +9,15 @@
  *
  * Callers must hold a row lock on the booking (lockBooking) before transitions.
  */
-import { and, eq, lt } from "drizzle-orm";
+import { and, eq, lt, ne } from "drizzle-orm";
 import { db, type Tx } from "@/db";
 import {
   bookingItems,
   bookings,
   events,
   organizerProfiles,
+  paymentPlans,
+  planInstallments,
   refunds,
   tickets,
   type Booking,
@@ -37,6 +39,21 @@ import { audit } from "../audit";
 export async function lockBooking(tx: Tx, bookingId: string) {
   const [b] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for("update");
   return b ?? null;
+}
+
+/**
+ * A plan whose deposit was never verified ends with its checkout hold (nothing
+ * was paid, so nothing to refund). A late deposit can still reinstate it.
+ */
+async function closeUnpaidPlan(tx: Tx, bookingId: string, status: "expired" | "cancelled") {
+  const [plan] = await tx
+    .update(paymentPlans)
+    .set({ status, endedAt: new Date(), endReason: status === "expired" ? "hold_expired" : "customer_cancelled", updatedAt: new Date() })
+    .where(and(eq(paymentPlans.bookingId, bookingId), eq(paymentPlans.status, "awaiting_deposit")))
+    .returning({ id: paymentPlans.id });
+  if (plan) {
+    await tx.update(planInstallments).set({ status: "cancelled", updatedAt: new Date() }).where(and(eq(planInstallments.planId, plan.id), ne(planInstallments.status, "paid")));
+  }
 }
 
 export async function bookingLines(tx: Tx, bookingId: string): Promise<InventoryLine[]> {
@@ -138,6 +155,7 @@ export async function expireStaleBookings(now = new Date(), limit = 200): Promis
         .update(bookings)
         .set({ status: "expired", inventoryState: "released", updatedAt: new Date() })
         .where(eq(bookings.id, b.id));
+      await closeUnpaidPlan(tx, b.id, "expired");
       return true;
     });
     if (done) count++;
@@ -153,6 +171,7 @@ export async function cancelPendingBooking(tx: Tx, booking: Booking, reason: str
     .set({ status: "cancelled", inventoryState: "released", cancelledAt: new Date(), updatedAt: new Date() })
     .where(eq(bookings.id, booking.id))
     .returning();
+  await closeUnpaidPlan(tx, booking.id, "cancelled");
   await audit(tx, { action: "booking.cancelled", entityType: "booking", entityId: b.id, metadata: { reason } });
   return b;
 }

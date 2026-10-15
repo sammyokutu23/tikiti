@@ -14,6 +14,7 @@ import { queuePaymentFailedEmail, queuePaymentReviewEmail } from "../email/notif
 import { queueEmail } from "../email/queue";
 import { enqueueJob } from "../jobs/queue";
 import { startMpesaPayment } from "./mpesa";
+import { applyPlanPaymentResult, finalizePlanRefunds } from "../plans/apply";
 import { getProvider, providerForMethod } from "./registry";
 import type { PaymentMethodKind } from "./types";
 
@@ -28,17 +29,20 @@ export async function startPayment(args: {
   payerPhone?: string | null;
   idempotencyKey: string;
   returnUrl: string;
+  /** Pay one installment of a payment plan instead of the whole booking (see ../plans/service). */
+  installment?: { id: string; amountMinor: number };
 }): Promise<{ redirectUrl: string; paymentId: string }> {
   const { booking } = args;
-  if (booking.status !== "pending") throw new UserError("This booking can no longer be paid.");
-  if (booking.expiresAt <= new Date()) throw new UserError("Your reservation has expired. Please start again.");
-  if (booking.totalMinor === 0) throw new UserError("This booking doesn't require payment.");
+  const amountMinor = args.installment?.amountMinor ?? booking.totalMinor;
+  if (!(booking.status === "pending" || (args.installment && booking.status === "on_plan"))) throw new UserError("This booking can no longer be paid.");
+  if (booking.expiresAt <= new Date()) throw new UserError(booking.status === "on_plan" ? "The payment deadline for this plan has passed." : "Your reservation has expired. Please start again.");
+  if (amountMinor <= 0) throw new UserError("This booking doesn't require payment.");
   if (!/^[\w-]{8,100}$/.test(args.idempotencyKey)) throw new UserError("Payment session is invalid. Please reload the page.");
 
   const provider = providerForMethod(args.method);
   if (!provider) throw new UserError("This payment method isn't available right now.");
   if (provider.name === "daraja") {
-    return startMpesaPayment({ booking, payerPhone: args.payerPhone ?? "", idempotencyKey: args.idempotencyKey, returnUrl: args.returnUrl });
+    return startMpesaPayment({ booking, payerPhone: args.payerPhone ?? "", idempotencyKey: args.idempotencyKey, returnUrl: args.returnUrl, amountMinor, installmentId: args.installment?.id ?? null });
   }
   if (!provider.createPayment) throw new UserError("This payment method isn't available right now.");
 
@@ -63,10 +67,11 @@ export async function startPayment(args: {
           provider: provider.name,
           method: args.method,
           status: "created",
-          amountMinor: booking.totalMinor,
+          amountMinor,
           currency: booking.currency,
           idempotencyKey: args.idempotencyKey,
           payerPhone: args.payerPhone ?? null,
+          installmentId: args.installment?.id ?? null,
         })
         .returning();
     } catch (err) {
@@ -85,7 +90,7 @@ export async function startPayment(args: {
     method: args.method,
     payerPhone: args.payerPhone,
     bookingReference: booking.reference,
-    description: `Tickets ${booking.reference}`,
+    description: args.installment ? `Installment ${booking.reference}` : `Tickets ${booking.reference}`,
     returnUrl: args.returnUrl,
   });
 
@@ -170,6 +175,8 @@ export async function applyPaymentResult(paymentId: string, r: PaymentResult): P
       nextStatusCheckAt: null,
       updatedAt: now,
     };
+    // Installments of a payment plan are applied to the plan, not straight to the booking.
+    if (payment.installmentId) return applyPlanPaymentResult(tx, { payment, booking, r, now, providerFields });
 
     if (r.status !== "succeeded") {
       if (FINAL_SUCCESS.has(payment.status)) return "ignored_after_success";
@@ -418,4 +425,5 @@ async function finalizeBookingRefundStatus(bookingId: string) {
       .set({ paymentStatus: "refunded", updatedAt: new Date() })
       .where(and(eq(bookings.id, bookingId), eq(bookings.paymentStatus, "refund_pending")));
   }
+  await finalizePlanRefunds(bookingId);
 }

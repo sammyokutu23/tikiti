@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { ImagePlus } from "lucide-react";
+import Link from "next/link";
+import { ImagePlus, Sparkles } from "lucide-react";
 import { Alert, Field, Input, Select, Textarea } from "@/components/ui";
 import { SubmitButton } from "@/components/ui/submit-button";
 import type { FormState } from "@/lib/forms";
@@ -20,7 +21,7 @@ const CATEGORIES = [
   ["arts", "Arts & Culture"],
 ];
 
-export type EventFormDefaults = Partial<Record<"title" | "summary" | "description" | "category" | "venueName" | "venueAddress" | "city" | "timezone" | "startsLocal" | "endsLocal" | "refundPolicy" | "coverImageUrl" | "arrivalInstructions" | "latitude" | "longitude" | "locationProvider" | "locationPlaceId" | "locationConfirmed", string>>;
+export type EventFormDefaults = Partial<Record<"title" | "summary" | "description" | "category" | "venueName" | "venueAddress" | "city" | "timezone" | "startsLocal" | "endsLocal" | "refundPolicy" | "coverImageUrl" | "arrivalInstructions" | "latitude" | "longitude" | "locationProvider" | "locationPlaceId" | "locationConfirmed" | "installmentsEnabled", string>>;
 
 export function EventForm({ eventId, defaults }: { eventId?: string; defaults: EventFormDefaults }) {
   const [state, action, pending] = useActionState(saveEventAction, {} as FormState);
@@ -49,7 +50,16 @@ export function EventForm({ eventId, defaults }: { eventId?: string; defaults: E
       <input type="hidden" name="coverImageUrl" value={v.coverImageUrl ?? ""} />
 
       <div className="space-y-2">
-        <p className="text-sm font-medium">Cover image</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-medium">Cover image</p>
+          {eventId ? (
+            <Link href={`/organizer/events/${eventId}/banner`} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-fg hover:bg-primary/90">
+              <Sparkles className="size-3.5" aria-hidden /> Create with AI
+            </Link>
+          ) : (
+            <span className="text-xs text-muted">Save the draft first to create a cover with AI.</span>
+          )}
+        </div>
         <label className="group relative flex aspect-[16/7] cursor-pointer items-center justify-center overflow-hidden rounded-3xl border border-dashed border-line-strong bg-fg/4 hover:bg-fg/6">
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -147,6 +157,12 @@ export function EventForm({ eventId, defaults }: { eventId?: string; defaults: E
       </fieldset>
       <Field label="Refund & cancellation policy" htmlFor="refundPolicy" error={fe.refundPolicy} hint="Shown to buyers before they pay.">
         <Textarea id="refundPolicy" name="refundPolicy" rows={3} defaultValue={v.refundPolicy} error={fe.refundPolicy} />
+      </Field>
+      <Field label="Lipa Mdogo Mdogo" htmlFor="installmentsEnabled" hint="Buyers pay a deposit and the rest in M-Pesa installments. Tickets are issued only after full payment; unpaid plans release their tickets before the event. Turning this off doesn't affect existing plans.">
+        <label className="flex items-center gap-3 rounded-2xl border border-line px-4 py-3 text-sm">
+          <input id="installmentsEnabled" type="checkbox" name="installmentsEnabled" defaultChecked={v.installmentsEnabled === "on"} className="size-5" />
+          Offer installment payment plans for this event
+        </label>
       </Field>
       <SubmitButton size="lg" pending={pending} pendingLabel="Saving…">{eventId ? "Save changes" : "Create draft"}</SubmitButton>
     </form>
