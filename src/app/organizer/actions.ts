@@ -58,6 +58,13 @@ export async function saveEventAction(_: FormState, fd: FormData): Promise<FormS
     return { fieldErrors: fe, values };
   }
 
+  // A new or changed start time must be in the future (a past start makes the event unsellable
+  // and hides time-based options such as payment plans).
+  const startChanged = !existing || existing.startsAt.getTime() !== parsed.data.startsAt.getTime();
+  if (startChanged && parsed.data.startsAt.getTime() <= Date.now()) {
+    return { fieldErrors: { startsLocal: "The start date and time is in the past. Check the date — buyers can only book future events." }, values };
+  }
+
   let cover: string | null = values.coverImageUrl || null;
   if (cover && !cover.startsWith("/media/") && !cover.startsWith("https://")) cover = null;
   const file = fd.get("coverImage");
