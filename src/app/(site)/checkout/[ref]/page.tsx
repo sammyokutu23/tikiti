@@ -103,7 +103,20 @@ export default async function PaymentPage({ params, searchParams }: PageProps<"/
                 modes={checkoutPaymentModes()}
               />
             );
-            if (!offer?.available) return full;
+            if (!offer || booking.totalMinor === 0) return full;
+            if (!offer.available) {
+              // Always show the option so buyers know it exists, with the reason it isn't available here.
+              return (
+                <PaymentChoice
+                  full={full}
+                  plan={
+                    <Alert tone="info" title="Lipa Mdogo Mdogo isn't available for this order">
+                      {offer.reason} Choose “Pay in full” to complete your booking.
+                    </Alert>
+                  }
+                />
+              );
+            }
             return (
               <PaymentChoice
                 full={full}
