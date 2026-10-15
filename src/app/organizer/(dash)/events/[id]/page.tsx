@@ -12,7 +12,8 @@ import { eventCoordinates } from "@/lib/location";
 import { canPublish, requireOrganizer, requireOwnedEvent } from "@/server/auth/guards";
 import { ticketTypesForEvent } from "@/server/events/queries";
 import { eventSalesStats } from "@/server/organizers/reports";
-import { cancelEventAction, publishAction, ticketTypeOpAction } from "@/app/organizer/actions";
+import { cancelEventAction, publishAction, ticketTypeOpAction, toggleInstallmentsAction } from "@/app/organizer/actions";
+import { getPlanPolicy } from "@/server/plans/policy";
 import { EventForm, TicketTypeForm } from "@/app/organizer/event-forms";
 
 export const metadata = { title: "Manage event" };
@@ -25,7 +26,8 @@ export default async function ManageEventPage({ params, searchParams }: PageProp
     if (e instanceof NotFoundError) notFound();
     throw e;
   });
-  const [types, stats] = await Promise.all([ticketTypesForEvent(ev.id), eventSalesStats(ev.id)]);
+  const [types, stats, planPolicy] = await Promise.all([ticketTypesForEvent(ev.id), eventSalesStats(ev.id), getPlanPolicy()]);
+  const daysAway = (ev.startsAt.getTime() - new Date().getTime()) / 86_400_000;
   const publishable = canPublish(ctx.user, ctx.organizer);
   const tz = ev.timezone;
   const local = (d: Date | null) => (d ? utcToZonedLocal(d, tz) : "");
@@ -86,6 +88,30 @@ export default async function ManageEventPage({ params, searchParams }: PageProp
         <Stat label="Checked in" value={stats.attendance.checkedIn} hint={`of ${stats.attendance.issued} valid tickets`} />
         <Stat label="Confirmed bookings" value={stats.bookings.confirmed} hint={`${stats.attendance.refunded} tickets refunded`} />
       </div>
+
+      {ev.status !== "cancelled" && (
+        <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold">Lipa Mdogo Mdogo</p>
+              <Badge tone={ev.installmentsEnabled ? "success" : "neutral"}>{ev.installmentsEnabled ? "On" : "Off"}</Badge>
+            </div>
+            <p className="text-sm text-muted">
+              Let buyers reserve tickets with a {planPolicy.depositBps / 100}% deposit and pay the rest in up to {Math.max(...planPolicy.installmentOptions)} M-Pesa installments. Tickets are issued only when fully paid.
+            </p>
+            {ev.installmentsEnabled && daysAway < planPolicy.minDaysBeforeEvent && (
+              <p className="text-xs text-warning">Not offered right now: plans need the event to be more than {planPolicy.minDaysBeforeEvent} days away.</p>
+            )}
+            {ev.installmentsEnabled && !planPolicy.enabled && <p className="text-xs text-warning">Payment plans are currently switched off platform-wide by Tikiti.</p>}
+            {ev.installmentsEnabled && ev.status === "draft" && <p className="text-xs text-muted">Buyers will see the option once the event is published.</p>}
+          </div>
+          <form action={toggleInstallmentsAction} className="shrink-0">
+            <input type="hidden" name="eventId" value={ev.id} />
+            <input type="hidden" name="op" value={ev.installmentsEnabled ? "off" : "on"} />
+            <SubmitButton variant={ev.installmentsEnabled ? "secondary" : "primary"}>{ev.installmentsEnabled ? "Turn off" : "Turn on"}</SubmitButton>
+          </form>
+        </Card>
+      )}
 
       <Section title="Ticket types">
         {types.length === 0 && <Alert tone="info">Add at least one ticket type before publishing.</Alert>}

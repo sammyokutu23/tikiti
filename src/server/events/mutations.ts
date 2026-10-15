@@ -169,6 +169,13 @@ export async function updateEvent(event: Event, actor: User, input: z.output<typ
   return ev;
 }
 
+/** Organizer opt-in for Lipa Mdogo Mdogo. Existing plans are unaffected either way. */
+export async function setInstallmentsEnabled(event: Event, actor: User, enabled: boolean) {
+  if (event.status === "cancelled") throw new UserError("Cancelled events can't be changed.");
+  await db.update(events).set({ installmentsEnabled: enabled, updatedAt: new Date() }).where(eq(events.id, event.id));
+  await audit(null, { actorUserId: actor.id, action: enabled ? "event.installments_enabled" : "event.installments_disabled", entityType: "event", entityId: event.id });
+}
+
 export async function publishEvent(event: Event, ctx: { user: User; organizer: OrganizerProfile }) {
   if (!canPublish(ctx.user, ctx.organizer)) {
     throw new UserError("Your organizer account must be verified before you can publish events.", "forbidden", 403);

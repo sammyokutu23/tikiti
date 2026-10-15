@@ -17,6 +17,7 @@ import {
   LOCATION_REQUIRED_MESSAGE,
   publishEvent,
   removeTicketType,
+  setInstallmentsEnabled,
   setTicketTypeActive,
   ticketTypeSchema,
   unpublishEvent,
@@ -213,4 +214,17 @@ export async function saveBannerCoverAction(_: FormState, fd: FormData): Promise
   }
   revalidatePath("/", "layout");
   redirect(withFlash(`/organizer/events/${ev.id}`, "ok", "New cover saved. Your previous image is kept in storage."));
+}
+
+export async function toggleInstallmentsAction(fd: FormData) {
+  const ctx = await requireOrganizer();
+  const ev = await requireOwnedEvent(String(fd.get("eventId")), ctx);
+  const on = fd.get("op") === "on";
+  try {
+    await setInstallmentsEnabled(ev, ctx.user, on);
+  } catch (err) {
+    redirect(withFlash(`/organizer/events/${ev.id}`, "error", userMessage(err)));
+  }
+  revalidatePath(`/organizer/events/${ev.id}`);
+  redirect(withFlash(`/organizer/events/${ev.id}`, "ok", on ? "Lipa Mdogo Mdogo is on: eligible buyers can now pay in installments." : "Lipa Mdogo Mdogo is off for new bookings. Existing plans continue."));
 }
