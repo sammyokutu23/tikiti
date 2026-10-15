@@ -19,7 +19,7 @@ export function DashNav({ items }: { items: NavItem[] }) {
             aria-current={active ? "page" : undefined}
             className={cn(
               "whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition lg:rounded-2xl",
-              active ? "bg-white text-black" : "bg-white/6 text-fg/80 hover:bg-white/12 lg:bg-transparent",
+              active ? "bg-primary text-primary-fg" : "bg-fg/6 text-fg/80 hover:bg-fg/12 lg:bg-transparent",
             )}
           >
             {it.label}

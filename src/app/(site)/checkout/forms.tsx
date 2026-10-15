@@ -87,8 +87,8 @@ export function PaymentForm({
   const nothingAvailable = modes.mpesa === "unavailable" && modes.card === "unavailable";
   const option = (m: "mpesa" | "card") =>
     cn(
-      "flex cursor-pointer items-center gap-3 rounded-3xl border p-4 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-white",
-      method === m ? "border-white/50 bg-white/[.07]" : "border-line bg-surface/70 hover:border-line-strong",
+      "flex cursor-pointer items-center gap-3 rounded-3xl border p-4 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-fg",
+      method === m ? "border-fg/50 bg-fg/[.07]" : "border-line bg-surface/70 hover:border-line-strong",
     );
   return (
     <form action={action} className="space-y-4" noValidate>
@@ -115,7 +115,7 @@ export function PaymentForm({
         {modes.card !== "unavailable" && (
           <label className={option("card")}>
             <input type="radio" name="method" value="card" checked={method === "card"} onChange={() => setMethod("card")} className="sr-only" />
-            <span className="flex size-11 items-center justify-center rounded-2xl bg-white text-black"><CreditCard className="size-5" aria-hidden /></span>
+            <span className="flex size-11 items-center justify-center rounded-2xl bg-primary text-primary-fg"><CreditCard className="size-5" aria-hidden /></span>
             <span className="flex-1">
               <span className="block font-semibold">Card</span>
               <span className="block text-xs text-muted">Visa or Mastercard on a secure payment page</span>
@@ -153,8 +153,8 @@ export function PaymentForm({
 
 function Radio({ checked }: { checked: boolean }) {
   return (
-    <span aria-hidden className={cn("flex size-5 items-center justify-center rounded-full border-2", checked ? "border-white" : "border-white/30")}>
-      {checked && <span className="size-2.5 rounded-full bg-white" />}
+    <span aria-hidden className={cn("flex size-5 items-center justify-center rounded-full border-2", checked ? "border-fg" : "border-fg/30")}>
+      {checked && <span className="size-2.5 rounded-full bg-fg" />}
     </span>
   );
 }

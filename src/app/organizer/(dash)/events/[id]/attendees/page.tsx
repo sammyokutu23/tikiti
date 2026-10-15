@@ -35,7 +35,7 @@ export default async function AttendeesPage({ params, searchParams }: PageProps<
       <form className="relative max-w-lg" role="search">
         <label htmlFor="aq" className="sr-only">Search attendees</label>
         <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-        <input id="aq" name="q" defaultValue={q} placeholder="Name, email, booking ref or ticket code" className="h-12 w-full rounded-full border border-line bg-white/5 pl-11 pr-4 text-sm focus:border-white/40 focus:outline-none" />
+        <input id="aq" name="q" defaultValue={q} placeholder="Name, email, booking ref or ticket code" className="h-12 w-full rounded-full border border-line bg-fg/5 pl-11 pr-4 text-sm focus:border-fg/40 focus:outline-none" />
       </form>
 
       {rows.length === 0 ? (

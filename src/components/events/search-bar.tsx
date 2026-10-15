@@ -14,9 +14,9 @@ export function SearchPill({ defaultValue, className }: { defaultValue?: string;
         name="q"
         defaultValue={defaultValue}
         placeholder="Search events, artists, venues…"
-        className="h-14 w-full rounded-full border border-line bg-white/6 pl-12 pr-14 text-[15px] placeholder:text-muted focus:border-white/40 focus:bg-white/10 focus:outline-none"
+        className="h-14 w-full rounded-full border border-line bg-fg/6 pl-12 pr-14 text-[15px] placeholder:text-muted focus:border-fg/40 focus:bg-fg/10 focus:outline-none"
       />
-      <Link href="/events#filters" aria-label="Filters" className="absolute right-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-muted hover:bg-white/8 hover:text-fg">
+      <Link href="/events#filters" aria-label="Filters" className="absolute right-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-muted hover:bg-fg/8 hover:text-fg">
         <SlidersHorizontal className="size-5" aria-hidden />
       </Link>
     </form>
@@ -30,7 +30,7 @@ export function FilterForm({
   values: { q?: string; category?: string; city?: string; when?: string; date?: string };
   cities: string[];
 }) {
-  const field = "h-12 w-full rounded-2xl border border-line bg-white/5 px-4 text-sm focus:border-white/40 focus:outline-none";
+  const field = "h-12 w-full rounded-2xl border border-line bg-fg/5 px-4 text-sm focus:border-fg/40 focus:outline-none";
   return (
     <form action="/events" id="filters" className="grid gap-3 rounded-3xl border border-line bg-surface/70 p-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto]">
       <div className="relative sm:col-span-2 lg:col-span-1">
@@ -70,7 +70,7 @@ export function FilterForm({
         <label htmlFor="f-date" className="sr-only">On a specific date</label>
         <input id="f-date" type="date" name="date" defaultValue={values.date} className={field} aria-label="Specific date" />
       </div>
-      <button className="h-12 rounded-2xl bg-white px-6 text-sm font-semibold text-black hover:bg-white/90">Search</button>
+      <button className="h-12 rounded-2xl bg-primary px-6 text-sm font-semibold text-primary-fg hover:bg-primary/90">Search</button>
     </form>
   );
 }

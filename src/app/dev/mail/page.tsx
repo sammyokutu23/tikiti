@@ -27,7 +27,7 @@ export default async function DevMailPage({ searchParams }: PageProps<"/dev/mail
         <ul className="space-y-2">
           {mails.map((m) => (
             <li key={m.id}>
-              <Link href={`/dev/mail?id=${m.id}`} className={`block rounded-2xl border p-3 text-sm ${m.id === selected?.id ? "border-white/40 bg-white/8" : "border-line hover:bg-white/4"}`}>
+              <Link href={`/dev/mail?id=${m.id}`} className={`block rounded-2xl border p-3 text-sm ${m.id === selected?.id ? "border-fg/40 bg-fg/8" : "border-line hover:bg-fg/4"}`}>
                 <p className="truncate font-medium">{m.subject}</p>
                 <p className="truncate text-xs text-muted">{m.to} · {new Date(m.capturedAt).toLocaleString("en-KE")}</p>
               </Link>
@@ -41,7 +41,7 @@ export default async function DevMailPage({ searchParams }: PageProps<"/dev/mail
             <p><span className="text-muted">To:</span> {selected.to}</p>
             <p><span className="text-muted">Subject:</span> {selected.subject}</p>
             {selected.attachments.map((a, i) => (
-              <a key={a.filename} href={`/dev/mail/attachment?id=${selected.id}&i=${i}`} className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/8 px-3 py-1 text-xs hover:bg-white/14">
+              <a key={a.filename} href={`/dev/mail/attachment?id=${selected.id}&i=${i}`} className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-fg/8 px-3 py-1 text-xs hover:bg-fg/14">
                 <Paperclip className="size-3.5" /> {a.filename} ({Math.round(a.size / 1024)} KB)
               </a>
             ))}

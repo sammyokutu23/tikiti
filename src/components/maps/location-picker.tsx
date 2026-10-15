@@ -160,7 +160,7 @@ export function LocationPicker({
               }
             }}
             placeholder="Venue, building or street, e.g. Carnivore, Langata Road"
-            className="h-12 w-full rounded-2xl border border-line bg-white/5 pl-10 pr-4 text-[15px] placeholder:text-subtle focus:border-white/40 focus:outline-none"
+            className="h-12 w-full rounded-2xl border border-line bg-fg/5 pl-10 pr-4 text-[15px] placeholder:text-subtle focus:border-fg/40 focus:outline-none"
             aria-describedby="venue-search-hint"
           />
         </div>
@@ -168,7 +168,7 @@ export function LocationPicker({
           type="button"
           onClick={search}
           disabled={searching}
-          className="inline-flex h-12 items-center gap-2 rounded-full bg-white/10 px-5 text-sm font-semibold hover:bg-white/15 disabled:opacity-60"
+          className="inline-flex h-12 items-center gap-2 rounded-full bg-fg/10 px-5 text-sm font-semibold hover:bg-fg/15 disabled:opacity-60"
         >
           {searching ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Search className="size-4" aria-hidden />}
           Search
@@ -193,7 +193,7 @@ export function LocationPicker({
                   onClick={() => choose(r)}
                   className={cn(
                     "flex w-full items-start gap-3 rounded-2xl border p-3 text-left text-sm transition",
-                    active ? "border-white/50 bg-white/[.08]" : "border-line hover:border-line-strong hover:bg-white/4",
+                    active ? "border-fg/50 bg-fg/[.08]" : "border-line hover:border-line-strong hover:bg-fg/4",
                   )}
                 >
                   <MapPin className="mt-0.5 size-4 shrink-0 text-muted" aria-hidden />
@@ -235,7 +235,7 @@ export function LocationPicker({
             const c = mapRef.current?.getCenter();
             if (c) placePin({ lat: c.lat, lng: c.lng }, { provider: "manual" });
           }}
-          className="inline-flex h-10 items-center gap-2 rounded-full bg-white/8 px-4 text-sm hover:bg-white/14 disabled:opacity-50"
+          className="inline-flex h-10 items-center gap-2 rounded-full bg-fg/8 px-4 text-sm hover:bg-fg/14 disabled:opacity-50"
         >
           <Crosshair className="size-4" aria-hidden /> Set pin at map centre
         </button>
@@ -245,7 +245,7 @@ export function LocationPicker({
           onClick={() => setValue((v) => ({ ...v, confirmed: true }))}
           className={cn(
             "inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition disabled:cursor-default",
-            value.confirmed ? "bg-success/15 text-success" : "bg-white text-black hover:bg-white/90 disabled:opacity-40",
+            value.confirmed ? "bg-success/15 text-success" : "bg-primary text-primary-fg hover:bg-primary/90 disabled:opacity-40",
           )}
         >
           <CheckCircle2 className="size-4" aria-hidden /> {value.confirmed ? "Pin confirmed" : "Confirm pin"}

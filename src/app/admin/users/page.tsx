@@ -24,7 +24,7 @@ export default async function AdminUsers({ searchParams }: PageProps<"/admin/use
       <form className="relative max-w-md" role="search">
         <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
         <label htmlFor="uq" className="sr-only">Search users</label>
-        <input id="uq" name="q" defaultValue={q} placeholder="Name or email" className="h-11 w-full rounded-full border border-line bg-white/5 pl-11 pr-4 text-sm focus:outline-none" />
+        <input id="uq" name="q" defaultValue={q} placeholder="Name or email" className="h-11 w-full rounded-full border border-line bg-fg/5 pl-11 pr-4 text-sm focus:outline-none" />
       </form>
       <Table>
         <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th /></tr></thead>

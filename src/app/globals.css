@@ -1,9 +1,12 @@
 @import "tailwindcss";
 
 /*
- * Tikiti design tokens — derived from the reference: near-black canvas with soft
- * charcoal gradients, white pill primary actions, glassy dark surfaces, large
- * radius image-first cards and a floating pill navigation.
+ * Tikiti design tokens. Dark (default): near-black canvas with soft charcoal
+ * gradients, white pill primary actions and glassy surfaces. Light: the same
+ * layout on a soft off-white canvas with black pill actions.
+ *
+ * Theme choice: <html data-theme="light|dark"> (from the tikiti-theme cookie);
+ * without the attribute the visitor's OS preference decides.
  */
 :root {
   --bg: #0a0a0b;
@@ -22,7 +25,61 @@
   --warning: #fbbf24;
   --danger: #f87171;
   --info: #93c5fd;
+  --glow: rgb(255 255 255 / 0.07);
+  --glow-2: rgb(255 255 255 / 0.03);
+  --nav-glass: rgb(30 30 34 / 0.55);
+  --shimmer: rgb(255 255 255 / 0.05);
   color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f5f5f7;
+    --bg-elevated: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #efeff2;
+    --surface-3: #e4e4e9;
+    --line: rgb(0 0 0 / 0.09);
+    --line-strong: rgb(0 0 0 / 0.18);
+    --fg: #0b0b0d;
+    --fg-muted: #55555e;
+    --fg-subtle: #85858f;
+    --primary: #0b0b0d;
+    --primary-fg: #ffffff;
+    --success: #15803d;
+    --warning: #b45309;
+    --danger: #dc2626;
+    --info: #1d4ed8;
+    --glow: rgb(0 0 0 / 0.035);
+    --glow-2: rgb(0 0 0 / 0.02);
+    --nav-glass: rgb(255 255 255 / 0.72);
+    --shimmer: rgb(0 0 0 / 0.05);
+    color-scheme: light;
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #f5f5f7;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #efeff2;
+  --surface-3: #e4e4e9;
+  --line: rgb(0 0 0 / 0.09);
+  --line-strong: rgb(0 0 0 / 0.18);
+  --fg: #0b0b0d;
+  --fg-muted: #55555e;
+  --fg-subtle: #85858f;
+  --primary: #0b0b0d;
+  --primary-fg: #ffffff;
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #dc2626;
+  --info: #1d4ed8;
+  --glow: rgb(0 0 0 / 0.035);
+  --glow-2: rgb(0 0 0 / 0.02);
+  --nav-glass: rgb(255 255 255 / 0.72);
+  --shimmer: rgb(0 0 0 / 0.05);
+  color-scheme: light;
 }
 
 @theme inline {
@@ -53,8 +110,8 @@ html {
 
 body {
   background:
-    radial-gradient(1200px 600px at 50% -10%, rgb(255 255 255 / 0.07), transparent 60%),
-    radial-gradient(800px 400px at 100% 0%, rgb(255 255 255 / 0.03), transparent 60%),
+    radial-gradient(1200px 600px at 50% -10%, var(--glow), transparent 60%),
+    radial-gradient(800px 400px at 100% 0%, var(--glow-2), transparent 60%),
     var(--bg);
   background-attachment: fixed;
   color: var(--fg);
@@ -63,19 +120,26 @@ body {
 }
 
 ::selection {
-  background: rgb(255 255 255 / 0.85);
-  color: #000;
+  background: var(--fg);
+  color: var(--bg);
 }
 
 :focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--fg);
   outline-offset: 2px;
 }
 
 input[type="datetime-local"]::-webkit-calendar-picker-indicator,
 input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
   opacity: 0.6;
+}
+:root[data-theme="dark"] input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) input::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+  }
 }
 
 .scrollbar-none {
@@ -85,8 +149,16 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   display: none;
 }
 
+/* Over photos: always dark glass with white text, whatever the theme. */
 .glass {
   background: rgb(30 30 34 / 0.55);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* Floating navigation: follows the theme. */
+.glass-nav {
+  background: var(--nav-glass);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
 }
@@ -110,7 +182,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.05), transparent);
+  background: linear-gradient(90deg, transparent, var(--shimmer), transparent);
   animation: shimmer 1.4s infinite;
 }
 
@@ -145,15 +217,15 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   text-decoration: underline;
 }
 .tikiti-map .leaflet-bar a {
-  background: #1a1a1d;
-  color: #f5f5f6;
-  border-color: rgb(255 255 255 / 0.1);
+  background: var(--surface);
+  color: var(--fg);
+  border-color: var(--line);
 }
 .tikiti-map .leaflet-bar a:hover {
-  background: #2c2c31;
+  background: var(--surface-3);
 }
 .tikiti-map .leaflet-container:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--fg);
   outline-offset: -2px;
 }
 .tikiti-pin {
@@ -163,6 +235,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 .tikiti-map .leaflet-popup-content-wrapper,
 .tikiti-map .leaflet-popup-tip {
-  background: #141416;
-  color: #f5f5f6;
+  background: var(--bg-elevated);
+  color: var(--fg);
 }

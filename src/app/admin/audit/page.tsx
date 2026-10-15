@@ -21,7 +21,7 @@ export default async function AdminAudit({ searchParams }: PageProps<"/admin/aud
       <PageHeader title="Audit log" subtitle="Sensitive actions across the platform." />
       <form className="max-w-sm">
         <label htmlFor="aq2" className="sr-only">Filter by action</label>
-        <input id="aq2" name="q" defaultValue={q} placeholder="Filter action, e.g. refund" className="h-11 w-full rounded-full border border-line bg-white/5 px-4 text-sm focus:outline-none" />
+        <input id="aq2" name="q" defaultValue={q} placeholder="Filter action, e.g. refund" className="h-11 w-full rounded-full border border-line bg-fg/5 px-4 text-sm focus:outline-none" />
       </form>
       <Table>
         <thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead>

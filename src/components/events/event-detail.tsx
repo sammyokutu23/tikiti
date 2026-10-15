@@ -63,7 +63,7 @@ export function EventDetailView({
 
           <div className="space-y-4">
             <div className="flex gap-4">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white/8"><CalendarDays className="size-5" aria-hidden /></span>
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-fg/8"><CalendarDays className="size-5" aria-hidden /></span>
               <div>
                 <p className="font-semibold">
                   {multiDay ? `${formatShortDate(event.startsAt, tz)} – ${formatEventDate(event.endsAt, tz)}` : formatEventDate(event.startsAt, tz)}
@@ -75,7 +75,7 @@ export function EventDetailView({
               </div>
             </div>
             <div className="flex gap-4">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white/8"><MapPin className="size-5" aria-hidden /></span>
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-fg/8"><MapPin className="size-5" aria-hidden /></span>
               <div>
                 <p className="font-semibold">{event.venueName}</p>
                 <p className="text-sm text-muted">{fullAddress}</p>
@@ -108,7 +108,7 @@ export function EventDetailView({
               </>
             ) : (
               <Card className="flex gap-4 p-4">
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-white/8"><MapPinOff className="size-5" aria-hidden /></span>
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-fg/8"><MapPinOff className="size-5" aria-hidden /></span>
                 <div className="space-y-1 text-sm">
                   <p className="font-semibold">{event.venueName}</p>
                   <p className="text-muted">{fullAddress}</p>
@@ -120,7 +120,7 @@ export function EventDetailView({
               </Card>
             )}
             {event.arrivalInstructions && (
-              <div className="rounded-2xl bg-white/5 p-4 text-sm">
+              <div className="rounded-2xl bg-fg/5 p-4 text-sm">
                 <p className="font-medium">Arrival &amp; entrance</p>
                 <p className="mt-1 whitespace-pre-line text-fg/75">{event.arrivalInstructions}</p>
               </div>
@@ -128,7 +128,7 @@ export function EventDetailView({
           </section>
 
           <Card className="flex items-center gap-4 p-4">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-black">
+            <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-fg">
               {organizer.displayName.slice(0, 1)}
             </span>
             <div className="min-w-0">

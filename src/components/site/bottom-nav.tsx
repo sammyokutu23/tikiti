@@ -19,7 +19,7 @@ export function BottomNav() {
   const activeIdx = items.findLastIndex((i) => i.match(path));
   return (
     <nav aria-label="Primary" className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 md:hidden">
-      <ul className="glass flex items-center gap-1 rounded-full border border-white/10 p-1.5 shadow-2xl shadow-black/60">
+      <ul className="glass-nav flex items-center gap-1 rounded-full border border-line p-1.5 shadow-2xl shadow-black/25">
         {items.map((it, i) => {
           const active = i === activeIdx;
           return (
@@ -30,7 +30,7 @@ export function BottomNav() {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex size-12 items-center justify-center rounded-full transition",
-                  active ? "bg-white text-black" : "text-white/75 hover:text-white",
+                  active ? "bg-primary text-primary-fg" : "text-fg/75 hover:text-fg",
                 )}
               >
                 <it.icon className="size-5" aria-hidden />

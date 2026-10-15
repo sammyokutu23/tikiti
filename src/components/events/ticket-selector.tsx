@@ -49,7 +49,7 @@ export function TicketSelector({ slug, types, disabledReason }: { slug: string; 
         return (
           <div
             key={t.id}
-            className={cn("rounded-3xl border p-4 transition", n > 0 ? "border-white/40 bg-white/[.06]" : "border-line bg-surface/70")}
+            className={cn("rounded-3xl border p-4 transition", n > 0 ? "border-fg/40 bg-fg/[.06]" : "border-line bg-surface/70")}
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -64,13 +64,13 @@ export function TicketSelector({ slug, types, disabledReason }: { slug: string; 
                 </p>
               </div>
               {t.saleState === "on_sale" && !disabledReason ? (
-                <div className="flex shrink-0 items-center gap-1 rounded-full bg-white/6 p-1" role="group" aria-label={`${t.name} quantity`}>
+                <div className="flex shrink-0 items-center gap-1 rounded-full bg-fg/6 p-1" role="group" aria-label={`${t.name} quantity`}>
                   <button
                     type="button"
                     onClick={() => set(t, n - 1)}
                     disabled={n === 0}
                     aria-label={`Remove one ${t.name} ticket`}
-                    className="flex size-9 items-center justify-center rounded-full bg-white/8 text-fg transition hover:bg-white/14 disabled:opacity-35"
+                    className="flex size-9 items-center justify-center rounded-full bg-fg/8 text-fg transition hover:bg-fg/14 disabled:opacity-35"
                   >
                     <Minus className="size-4" aria-hidden />
                   </button>
@@ -80,13 +80,13 @@ export function TicketSelector({ slug, types, disabledReason }: { slug: string; 
                     onClick={() => set(t, n + 1)}
                     disabled={!canInc}
                     aria-label={`Add one ${t.name} ticket`}
-                    className="flex size-9 items-center justify-center rounded-full bg-white text-black transition hover:bg-white/90 disabled:opacity-35"
+                    className="flex size-9 items-center justify-center rounded-full bg-primary text-primary-fg transition hover:bg-primary/90 disabled:opacity-35"
                   >
                     <Plus className="size-4" aria-hidden />
                   </button>
                 </div>
               ) : (
-                <span className="shrink-0 rounded-full bg-white/6 px-3 py-1.5 text-xs font-medium text-muted">
+                <span className="shrink-0 rounded-full bg-fg/6 px-3 py-1.5 text-xs font-medium text-muted">
                   {t.saleState === "sold_out" ? "Sold out" : t.saleState === "ended" ? "Ended" : t.saleState === "upcoming" ? "Soon" : "Unavailable"}
                 </span>
               )}
@@ -95,7 +95,7 @@ export function TicketSelector({ slug, types, disabledReason }: { slug: string; 
         );
       })}
 
-      {disabledReason && <p className="rounded-2xl bg-white/6 p-3 text-center text-sm text-muted">{disabledReason}</p>}
+      {disabledReason && <p className="rounded-2xl bg-fg/6 p-3 text-center text-sm text-muted">{disabledReason}</p>}
 
       {/* Sticky action bar on mobile, inline on desktop */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/90 p-4 backdrop-blur-xl lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:pt-2 lg:backdrop-blur-none">
@@ -108,7 +108,7 @@ export function TicketSelector({ slug, types, disabledReason }: { slug: string; 
             type="button"
             onClick={go}
             disabled={totalQty === 0 || navigating || !!disabledReason}
-            className="inline-flex h-14 flex-[2] items-center justify-center gap-2 rounded-full bg-white px-6 font-semibold text-black transition hover:bg-white/90 disabled:opacity-40"
+            className="inline-flex h-14 flex-[2] items-center justify-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-fg transition hover:bg-primary/90 disabled:opacity-40"
           >
             <Ticket className="size-5" aria-hidden />
             {navigating ? "Loading…" : total === 0 && totalQty > 0 ? "Get free tickets" : "Buy tickets"}

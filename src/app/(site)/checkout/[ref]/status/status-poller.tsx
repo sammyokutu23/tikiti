@@ -119,7 +119,7 @@ export function StatusPoller({ reference, access, initial }: { reference: string
     const [title, body] = map[s.status] ?? ["Booking update", `Status: ${s.status}`];
     return (
       <div className="space-y-6 text-center">
-        <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-white/8 text-muted">
+        <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-fg/8 text-muted">
           <Clock className="size-10" aria-hidden />
         </div>
         <div className="space-y-2" role="status">
@@ -161,7 +161,7 @@ export function StatusPoller({ reference, access, initial }: { reference: string
 
   return (
     <div className="space-y-6 text-center" role="status" aria-live="polite">
-      <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-white/8">
+      <div className="mx-auto flex size-20 items-center justify-center rounded-full bg-fg/8">
         <Loader2 className="size-10 animate-spin" aria-hidden />
       </div>
       <div className="space-y-2">

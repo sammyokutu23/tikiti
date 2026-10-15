@@ -32,7 +32,7 @@ export default async function AdminBookings({ searchParams }: PageProps<"/admin/
       <form className="relative max-w-lg" role="search">
         <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
         <label htmlFor="abq" className="sr-only">Search</label>
-        <input id="abq" name="q" defaultValue={q} placeholder="Reference, buyer email/name/phone or event" className="h-12 w-full rounded-full border border-line bg-white/5 pl-11 pr-4 text-sm focus:outline-none" />
+        <input id="abq" name="q" defaultValue={q} placeholder="Reference, buyer email/name/phone or event" className="h-12 w-full rounded-full border border-line bg-fg/5 pl-11 pr-4 text-sm focus:outline-none" />
       </form>
       {rows.length === 0 ? (
         <EmptyState title="No bookings found" />

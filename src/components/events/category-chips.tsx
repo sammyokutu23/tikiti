@@ -13,7 +13,7 @@ export function CategoryChips({ active, base = "/events", extra }: { active?: st
   const chip = (isActive: boolean) =>
     cn(
       "inline-flex h-11 shrink-0 items-center rounded-full px-5 text-sm font-medium transition",
-      isActive ? "bg-white text-black" : "bg-white/7 text-fg/85 hover:bg-white/12",
+      isActive ? "bg-primary text-primary-fg" : "bg-fg/7 text-fg/85 hover:bg-fg/12",
     );
   return (
     <nav aria-label="Categories" className="scrollbar-none relative -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0">

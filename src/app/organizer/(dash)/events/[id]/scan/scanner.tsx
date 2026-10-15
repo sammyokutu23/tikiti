@@ -132,7 +132,7 @@ export function Scanner({ eventId }: { eventId: string }) {
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
               <Camera className="size-10 text-muted" aria-hidden />
               <p className="text-sm text-muted">{camera === "error" ? camError : "Point the camera at a ticket QR code."}</p>
-              <button onClick={start} disabled={camera === "starting"} className="inline-flex h-12 items-center gap-2 rounded-full bg-white px-6 font-semibold text-black disabled:opacity-60">
+              <button onClick={start} disabled={camera === "starting"} className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-6 font-semibold text-primary-fg disabled:opacity-60">
                 {camera === "starting" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Camera className="size-4" aria-hidden />} Start camera
               </button>
             </div>
@@ -153,9 +153,9 @@ export function Scanner({ eventId }: { eventId: string }) {
           <label htmlFor="manual" className="sr-only">Ticket code</label>
           <div className="relative flex-1">
             <Keyboard className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
-            <input id="manual" value={manual} onChange={(e) => setManual(e.target.value)} placeholder="Type ticket code, e.g. K7QM-2XPA-9DRT-HWZB" autoCapitalize="characters" className="h-12 w-full rounded-full border border-line bg-white/5 pl-11 pr-4 font-mono text-sm uppercase focus:border-white/40 focus:outline-none" />
+            <input id="manual" value={manual} onChange={(e) => setManual(e.target.value)} placeholder="Type ticket code, e.g. K7QM-2XPA-9DRT-HWZB" autoCapitalize="characters" className="h-12 w-full rounded-full border border-line bg-fg/5 pl-11 pr-4 font-mono text-sm uppercase focus:border-fg/40 focus:outline-none" />
           </div>
-          <button disabled={busy || !manual.trim()} className="h-12 rounded-full bg-white px-5 text-sm font-semibold text-black disabled:opacity-50">Check</button>
+          <button disabled={busy || !manual.trim()} className="h-12 rounded-full bg-primary px-5 text-sm font-semibold text-primary-fg disabled:opacity-50">Check</button>
         </form>
       </div>
 
@@ -199,7 +199,7 @@ export function Scanner({ eventId }: { eventId: string }) {
             <p className="text-xs text-muted">This session: {counts.ok ?? 0} admitted · {counts.warn ?? 0} repeat · {counts.bad ?? 0} rejected</p>
             <ul className="space-y-1.5 text-sm">
               {history.map((h, i) => (
-                <li key={i} className="flex items-center justify-between gap-2 rounded-2xl bg-white/4 px-3 py-2">
+                <li key={i} className="flex items-center justify-between gap-2 rounded-2xl bg-fg/4 px-3 py-2">
                   <span className="truncate">{h.ticket?.attendeeName ?? h.ticket?.code ?? "Unknown code"}</span>
                   <span className={cn("shrink-0 text-xs", TONE[h.result] === "ok" ? "text-success" : TONE[h.result] === "warn" ? "text-warning" : "text-danger")}>
                     {h.message} · {h.at.toLocaleTimeString("en-KE", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}

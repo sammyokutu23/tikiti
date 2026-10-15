@@ -7,14 +7,16 @@ import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
+import { poolConfig } from "../src/db/connection";
 
 async function main() {
   const url = process.argv[2] === "--test" ? process.env.TEST_DATABASE_URL : process.env.DATABASE_URL;
   if (!url) throw new Error("Database URL not set");
-  const pool = new Pool({ connectionString: url, max: 1 });
+  const pool = new Pool(poolConfig(url, 1));
   await migrate(drizzle(pool), { migrationsFolder: "./drizzle" });
   await pool.end();
-  console.log(`Migrations applied to ${new URL(url).pathname.slice(1)}`);
+  const u = new URL(url);
+  console.log(`Migrations applied to ${u.pathname.slice(1)} on ${u.hostname}`);
 }
 
 main().catch((e) => {

@@ -82,7 +82,7 @@ export default async function HomePage() {
                 href={`/events?category=${c.value}`}
                 className="group flex items-center gap-3 rounded-3xl border border-line bg-surface/70 p-4 transition hover:border-line-strong hover:bg-surface"
               >
-                <span className="flex size-11 items-center justify-center rounded-2xl bg-white/8 transition group-hover:bg-white group-hover:text-black">
+                <span className="flex size-11 items-center justify-center rounded-2xl bg-fg/8 transition group-hover:bg-primary group-hover:text-primary-fg">
                   <Icon className="size-5" aria-hidden />
                 </span>
                 <span className="text-sm font-medium">{c.label}</span>

@@ -72,7 +72,7 @@ export default async function AdminEvents({ searchParams }: PageProps<"/admin/ev
         <form className="relative max-w-md" role="search">
           <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <label htmlFor="eq" className="sr-only">Search events</label>
-          <input id="eq" name="q" defaultValue={q} placeholder="Title, organizer or city" className="h-11 w-full rounded-full border border-line bg-white/5 pl-11 pr-4 text-sm focus:outline-none" />
+          <input id="eq" name="q" defaultValue={q} placeholder="Title, organizer or city" className="h-11 w-full rounded-full border border-line bg-fg/5 pl-11 pr-4 text-sm focus:outline-none" />
         </form>
         <Table>
           <thead><tr><th>Event</th><th>Organizer</th><th>Starts</th><th>Status</th><th>Moderation</th></tr></thead>

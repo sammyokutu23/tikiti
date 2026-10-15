@@ -45,7 +45,7 @@ export default async function MockPayPage({ params, searchParams }: PageProps<"/
           <p className="text-sm text-muted">{row.eventTitle} · {row.booking.reference}</p>
         </div>
         <div className="space-y-4 p-6">
-          <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-4">
+          <div className="flex items-center gap-3 rounded-2xl bg-fg/5 p-4">
             {payment.method === "mpesa" ? <Smartphone className="size-6" aria-hidden /> : <CreditCard className="size-6" aria-hidden />}
             <div className="text-sm">
               {payment.method === "mpesa" ? (

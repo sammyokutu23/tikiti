@@ -50,7 +50,7 @@ export function EventForm({ eventId, defaults }: { eventId?: string; defaults: E
 
       <div className="space-y-2">
         <p className="text-sm font-medium">Cover image</p>
-        <label className="group relative flex aspect-[16/7] cursor-pointer items-center justify-center overflow-hidden rounded-3xl border border-dashed border-line-strong bg-white/4 hover:bg-white/6">
+        <label className="group relative flex aspect-[16/7] cursor-pointer items-center justify-center overflow-hidden rounded-3xl border border-dashed border-line-strong bg-fg/4 hover:bg-fg/6">
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={preview} alt="Cover preview" className="absolute inset-0 size-full object-cover" />

@@ -42,7 +42,7 @@ export default async function ApplyPage() {
           const I = Icon as typeof FileEdit;
           return (
             <div key={t as string} className="flex gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-white/8"><I className="size-5" aria-hidden /></span>
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-fg/8"><I className="size-5" aria-hidden /></span>
               <div><p className="font-semibold">{t as string}</p><p className="text-muted">{d as string}</p></div>
             </div>
           );

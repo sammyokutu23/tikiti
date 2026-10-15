@@ -12,14 +12,14 @@ export function buttonClasses(variant: Variant = "primary", size: Size = "md", f
   return cn(
     "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition select-none",
     "disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
-    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg",
     size === "sm" && "h-9 px-4 text-sm",
     size === "md" && "h-11 px-5 text-sm",
     size === "lg" && "h-14 px-7 text-base",
-    variant === "primary" && "bg-primary text-primary-fg hover:bg-white/90 active:scale-[.98]",
-    variant === "secondary" && "bg-white/8 text-fg hover:bg-white/14 border border-line",
-    variant === "outline" && "border border-line-strong text-fg hover:bg-white/6",
-    variant === "ghost" && "text-fg hover:bg-white/8",
+    variant === "primary" && "bg-primary text-primary-fg hover:bg-primary/90 active:scale-[.98]",
+    variant === "secondary" && "bg-fg/8 text-fg hover:bg-fg/14 border border-line",
+    variant === "outline" && "border border-line-strong text-fg hover:bg-fg/6",
+    variant === "ghost" && "text-fg hover:bg-fg/8",
     variant === "danger" && "bg-danger/15 text-danger border border-danger/30 hover:bg-danger/25",
     full && "w-full",
   );
@@ -51,7 +51,7 @@ export function IconButton({ className, label, ...props }: ComponentProps<"butto
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex size-11 items-center justify-center rounded-full bg-white/8 text-fg transition hover:bg-white/14",
+        "inline-flex size-11 items-center justify-center rounded-full bg-fg/8 text-fg transition hover:bg-fg/14",
         className,
       )}
       {...props}
@@ -65,7 +65,7 @@ export function IconLink({ className, label, ...props }: ComponentProps<typeof L
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-white/8 text-fg transition hover:bg-white/14",
+        "inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-fg/8 text-fg transition hover:bg-fg/14",
         className,
       )}
       {...props}
@@ -117,7 +117,7 @@ export function Stat({ label, value, hint, className }: { label: string; value: 
 export function EmptyState({ icon, title, body, action }: { icon?: ReactNode; title: string; body?: ReactNode; action?: ReactNode }) {
   return (
     <div className="flex flex-col items-center rounded-3xl border border-dashed border-line-strong px-6 py-14 text-center">
-      {icon && <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-white/6 text-muted">{icon}</div>}
+      {icon && <div className="mb-4 flex size-14 items-center justify-center rounded-full bg-fg/6 text-muted">{icon}</div>}
       <p className="font-semibold">{title}</p>
       {body && <p className="mt-1 max-w-sm text-sm text-muted">{body}</p>}
       {action && <div className="mt-5">{action}</div>}
@@ -171,12 +171,12 @@ export function Badge({ tone = "neutral", children, className }: { tone?: Tone; 
     <span
       className={cn(
         "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium",
-        tone === "neutral" && "bg-white/8 text-fg/80",
+        tone === "neutral" && "bg-fg/8 text-fg/80",
         tone === "success" && "bg-success/12 text-success",
         tone === "warning" && "bg-warning/12 text-warning",
         tone === "danger" && "bg-danger/12 text-danger",
         tone === "info" && "bg-info/12 text-info",
-        tone === "solid" && "bg-white text-black",
+        tone === "solid" && "bg-primary text-primary-fg",
         className,
       )}
     >
@@ -251,7 +251,7 @@ export function StatusBadge({ status, className }: { status: string; className?:
 // ─── Form fields ────────────────────────────────────────────────────────────
 
 export const inputClasses =
-  "w-full rounded-2xl border border-line bg-white/5 px-4 py-3 text-[15px] text-fg placeholder:text-subtle transition focus:border-white/40 focus:bg-white/8 focus:outline-none aria-[invalid=true]:border-danger/60";
+  "w-full rounded-2xl border border-line bg-fg/5 px-4 py-3 text-[15px] text-fg placeholder:text-subtle transition focus:border-fg/40 focus:bg-fg/8 focus:outline-none aria-[invalid=true]:border-danger/60";
 
 export function Field({
   label,
@@ -328,7 +328,7 @@ export function Select({ className, error, ...props }: ComponentProps<"select"> 
 export function Table({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <div className={cn("overflow-x-auto rounded-3xl border border-line bg-surface/60", className)}>
-      <table className="w-full min-w-[640px] text-left text-sm [&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted [&_thead]:border-b [&_thead]:border-line [&_tbody_tr]:border-b [&_tbody_tr]:border-line/60 [&_tbody_tr:last-child]:border-0 [&_tbody_tr:hover]:bg-white/[.02]">
+      <table className="w-full min-w-[640px] text-left text-sm [&_td]:px-4 [&_td]:py-3 [&_th]:px-4 [&_th]:py-3 [&_th]:text-xs [&_th]:font-medium [&_th]:text-muted [&_thead]:border-b [&_thead]:border-line [&_tbody_tr]:border-b [&_tbody_tr]:border-line/60 [&_tbody_tr:last-child]:border-0 [&_tbody_tr:hover]:bg-fg/[.02]">
         {children}
       </table>
     </div>
@@ -345,7 +345,7 @@ export function Tabs({ items, active }: { items: { href: string; label: ReactNod
           aria-current={it.key === active ? "page" : undefined}
           className={cn(
             "whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition",
-            it.key === active ? "bg-white text-black" : "bg-white/6 text-fg/80 hover:bg-white/12",
+            it.key === active ? "bg-primary text-primary-fg" : "bg-fg/6 text-fg/80 hover:bg-fg/12",
           )}
         >
           {it.label}

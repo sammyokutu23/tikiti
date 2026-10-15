@@ -34,8 +34,8 @@ export default async function OrganizerEventsPage() {
                     <p className="truncate font-semibold">{e.title}</p>
                     <p className="text-xs text-muted">{formatDateTime(e.startsAt, e.timezone)} · {e.venueName}</p>
                     <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-32 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Sold">
-                        <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />
+                      <div className="h-1.5 w-32 overflow-hidden rounded-full bg-fg/10" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Sold">
+                        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
                       </div>
                       <span className="text-xs tabular-nums text-muted">{e.sold}/{e.capacity} sold</span>
                     </div>

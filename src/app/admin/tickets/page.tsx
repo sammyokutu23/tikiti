@@ -44,7 +44,7 @@ export default async function AdminTickets({ searchParams }: PageProps<"/admin/t
       <Flash sp={sp} />
       <form className="flex max-w-xl gap-2">
         <Input name="code" defaultValue={raw} placeholder="Ticket code or QR payload" className="font-mono" aria-label="Ticket code" />
-        <button className="rounded-full bg-white px-5 text-sm font-semibold text-black">Look up</button>
+        <button className="rounded-full bg-primary px-5 text-sm font-semibold text-primary-fg">Look up</button>
       </form>
       {raw && !ticket && <EmptyState title="No ticket found" body={parsed && !parsed.ok ? `Input rejected: ${parsed.reason.replace("_", " ")}` : "Check the code and try again."} />}
       {ticket && (

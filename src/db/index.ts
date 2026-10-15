@@ -1,5 +1,6 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { poolConfig } from "./connection";
 import * as schema from "./schema";
 
 export type Database = NodePgDatabase<typeof schema>;
@@ -11,7 +12,7 @@ const globalForDb = globalThis as unknown as { __tikitiPool?: Pool; __tikitiDb?:
 function createDb(): Database {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is not set. Copy .env.example to .env.");
-  const pool = new Pool({ connectionString: url, max: Number(process.env.DB_POOL_MAX ?? 10) });
+  const pool = new Pool(poolConfig(url, Number(process.env.DB_POOL_MAX ?? 10)));
   globalForDb.__tikitiPool = pool;
   return drizzle(pool, { schema });
 }
