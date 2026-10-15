@@ -55,7 +55,7 @@ export function EventForm({ eventId, defaults }: { eventId?: string; defaults: E
             // eslint-disable-next-line @next/next/no-img-element
             <img src={preview} alt="Cover preview" className="absolute inset-0 size-full object-cover" />
           ) : (
-            <span className="flex flex-col items-center gap-2 text-sm text-muted"><ImagePlus className="size-7" aria-hidden />Upload a JPG, PNG or WebP (max 5 MB)</span>
+            <span className="flex flex-col items-center gap-2 text-sm text-muted"><ImagePlus className="size-7" aria-hidden />Upload a JPG, PNG or WebP (max 4 MB)</span>
           )}
           <input
             type="file"
@@ -66,8 +66,8 @@ export function EventForm({ eventId, defaults }: { eventId?: string; defaults: E
               const f = e.target.files?.[0];
               setFileError(null);
               if (!f) return;
-              if (f.size > 5 * 1024 * 1024) {
-                setFileError("Image is too large. Maximum size is 5 MB.");
+              if (f.size > 4 * 1024 * 1024) {
+                setFileError("Image is too large. Maximum size is 4 MB.");
                 e.target.value = "";
                 return;
               }

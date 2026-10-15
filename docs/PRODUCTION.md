@@ -37,9 +37,29 @@ items below.
 
 - **PostgreSQL:** a managed instance with backups and PITR. Run `npm run db:migrate` on deploy;
   migrations in `./drizzle` are additive.
-- **Worker:** run `npm run worker` as its own process and set `JOBS_INLINE_WORKER=false` on web nodes.
-- **Images:** implement an S3 / R2 / GCS `StorageDriver` (`src/server/storage.ts`) and set
-  `STORAGE_DRIVER`. The local driver writes to disk, which is ephemeral on most hosts.
+- **Worker:** on a server, run `npm run worker` as its own process and set `JOBS_INLINE_WORKER=false`
+  on web nodes. On a serverless host there's no long-lived process, so a scheduler calls
+  `GET /api/cron/tick` (header `Authorization: Bearer $CRON_SECRET`) every minute instead. Each call
+  expires lapsed holds, reconciles M-Pesa payments, schedules reminders and runs due jobs (emails,
+  retries). Without `CRON_SECRET` the endpoint returns 503.
+- **Images:** the local driver writes to disk, which is ephemeral on most hosts. Set
+  `STORAGE_DRIVER=supabase` with `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` to store uploads in a
+  public Supabase Storage bucket. Uploads are capped at 4 MB, because Vercel rejects request bodies over 4.5 MB.
+
+### Vercel + Supabase
+
+1. Set `DATABASE_URL` to the Supabase **transaction pooler** URL (port 6543) and run
+   `npm run db:migrate` against it. Enable Row Level Security on every `public` table: the app
+   connects as the table owner, which bypasses RLS, and RLS with no policies blocks Supabase's
+   public Data API.
+2. Set `JOBS_INLINE_WORKER=false`, `STORAGE_DRIVER=supabase`, `SUPABASE_URL`,
+   `SUPABASE_SERVICE_KEY` and `CRON_SECRET` in Vercel.
+3. Run `npx tsx scripts/supabase-setup.ts https://<your-site>`. It creates the `event-images`
+   bucket and a Supabase Cron job (pg_cron + pg_net) that calls `/api/cron/tick` every minute. The
+   secret is kept in Supabase Vault. The script is idempotent.
+4. `vercel.json` also schedules a daily Vercel Cron call as a backstop. Vercel's Hobby plan only
+   allows daily crons, which is why the per-minute schedule runs in Supabase. Vercel sends
+   `CRON_SECRET` automatically.
 - **Rate limiting** is in-memory per process. Move it to Redis or Postgres when running more than
   one instance.
 - **Secrets:** generate strong `SESSION_SECRET`, `QR_SIGNING_SECRET` and `ACCESS_LINK_SECRET`

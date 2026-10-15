@@ -1,8 +1,10 @@
 /**
  * Object storage adapter for event images.
  *  - local: ./storage/uploads, served by /media/[...key]. Dev only — most hosts
- *    have ephemeral disks. Production should set STORAGE_DRIVER=s3 and implement
- *    the S3/R2 adapter below (same interface).
+ *    (Vercel included) have ephemeral disks.
+ *  - supabase: a public Supabase Storage bucket (SUPABASE_URL, SUPABASE_SERVICE_KEY,
+ *    SUPABASE_STORAGE_BUCKET). Images are served straight from Supabase's CDN.
+ *    The service key is server-only; uploads are validated here before they leave.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -10,7 +12,7 @@ import { randomToken } from "@/lib/crypto";
 import { UserError } from "@/lib/errors";
 
 export const UPLOAD_DIR = path.resolve(process.cwd(), "storage/uploads");
-export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 4 * 1024 * 1024; // Vercel caps request bodies at 4.5 MB
 const MIN_IMAGE_BYTES = 1024;
 
 export type ImageKind = { ext: "jpg" | "png" | "webp"; mime: string };
@@ -29,7 +31,7 @@ export function sniffImage(buf: Uint8Array): ImageKind | null {
 }
 
 export function validateImageUpload(buf: Uint8Array): ImageKind {
-  if (buf.length > MAX_IMAGE_BYTES) throw new UserError("Image is too large. Maximum size is 5 MB.");
+  if (buf.length > MAX_IMAGE_BYTES) throw new UserError("Image is too large. Maximum size is 4 MB.");
   if (buf.length < MIN_IMAGE_BYTES) throw new UserError("Image file is empty or corrupt.");
   const kind = sniffImage(buf);
   if (!kind) throw new UserError("Unsupported image. Upload a JPG, PNG or WebP file.");
@@ -50,14 +52,49 @@ const local: StorageDriver = {
   },
 };
 
+export function supabaseStorageConfig(source: Record<string, string | undefined> = process.env) {
+  const url = source.SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const key = source.SUPABASE_SERVICE_KEY?.trim();
+  const bucket = source.SUPABASE_STORAGE_BUCKET?.trim() || "event-images";
+  if (!url || !/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)) throw new Error("SUPABASE_URL must look like https://<project-ref>.supabase.co");
+  if (!key) throw new Error("SUPABASE_SERVICE_KEY is not set");
+  if (!/^[a-z0-9][a-z0-9_-]{1,62}$/.test(bucket)) throw new Error("SUPABASE_STORAGE_BUCKET is not a valid bucket name");
+  return { url, key, bucket };
+}
+
+const supabase: StorageDriver = {
+  async put(buf, kind, prefix) {
+    const { url, key, bucket } = supabaseStorageConfig();
+    const objectKey = `${prefix}/${Date.now()}-${randomToken(9)}.${kind.ext}`;
+    const res = await fetch(`${url}/storage/v1/object/${bucket}/${objectKey}`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        "Content-Type": kind.mime,
+        "Cache-Control": "31536000",
+        "x-upsert": "false",
+      },
+      body: Buffer.from(buf),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) {
+      console.error(`[storage] Supabase upload failed: ${res.status} ${(await res.text().catch(() => "")).slice(0, 200)}`);
+      throw new UserError("The image couldn't be uploaded right now. Please try again.");
+    }
+    return `${url}/storage/v1/object/public/${bucket}/${objectKey}`;
+  },
+};
+
 export function storage(): StorageDriver {
   const driver = process.env.STORAGE_DRIVER ?? "local";
   if (driver === "local") return local;
+  if (driver === "supabase") return supabase;
   throw new Error(`STORAGE_DRIVER=${driver} is not implemented yet. See docs/PRODUCTION.md.`);
 }
 
 export async function saveEventImage(file: File): Promise<string> {
-  if (file.size > MAX_IMAGE_BYTES) throw new UserError("Image is too large. Maximum size is 5 MB.");
+  if (file.size > MAX_IMAGE_BYTES) throw new UserError("Image is too large. Maximum size is 4 MB.");
   const buf = new Uint8Array(await file.arrayBuffer());
   const kind = validateImageUpload(buf);
   return storage().put(buf, kind, "events");

@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   experimental: {
-    serverActions: { bodySizeLimit: "6mb" }, // 5 MB cover images + multipart overhead
+    serverActions: { bodySizeLimit: "5mb" }, // 4 MB cover images + multipart overhead
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
