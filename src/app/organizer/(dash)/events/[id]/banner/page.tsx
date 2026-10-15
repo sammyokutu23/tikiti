@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Alert, PageHeader } from "@/components/ui";
+import { Flash } from "@/components/dash/flash";
 import { NotFoundError } from "@/lib/errors";
 import { requireOrganizer, requireOwnedEvent } from "@/server/auth/guards";
 import { imageApiStatus } from "@/server/banners/openai";
@@ -11,8 +12,9 @@ import { BannerStudio, type StudioGeneration } from "./banner-studio";
 
 export const metadata = { title: "AI Banner Studio" };
 
-export default async function BannerStudioPage({ params }: PageProps<"/organizer/events/[id]/banner">) {
+export default async function BannerStudioPage({ params, searchParams }: PageProps<"/organizer/events/[id]/banner">) {
   const { id } = await params;
+  const sp = await searchParams;
   const ctx = await requireOrganizer();
   const ev = await requireOwnedEvent(id, ctx).catch((e) => {
     if (e instanceof NotFoundError) notFound();
@@ -39,6 +41,7 @@ export default async function BannerStudioPage({ params }: PageProps<"/organizer
         title="AI Banner Studio"
         subtitle="Generate artwork, preview it with your real event details, then download it or use it as your cover."
       />
+      <Flash sp={sp} />
       {!api.configured && (
         <Alert tone="info" title="AI generation isn't set up yet">
           {ctx.user.role === "admin" ? `Configuration problem: ${api.problem}. See docs/AI_BANNERS.md.` : "The platform hasn't enabled AI banners yet. You can upload your own cover image in Event details."}

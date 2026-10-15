@@ -79,6 +79,9 @@ export async function saveEventAction(_: FormState, fd: FormData): Promise<FormS
     return { error: userMessage(err), values };
   }
   revalidatePath("/", "layout");
+  if (fd.get("intent") === "ai-banner") {
+    redirect(withFlash(`/organizer/events/${eventId}/banner`, "ok", existing ? "Event saved. Create your banner below." : "Draft saved. Create your banner below, then add ticket types."));
+  }
   redirect(withFlash(`/organizer/events/${eventId}`, "ok", existing ? "Event saved." : "Draft created. Now add ticket types."));
 }
 

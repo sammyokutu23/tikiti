@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { ImagePlus, Sparkles } from "lucide-react";
-import { Alert, Field, Input, Select, Textarea } from "@/components/ui";
+import { Alert, Field, Input, Select, Textarea, buttonClasses } from "@/components/ui";
 import { SubmitButton } from "@/components/ui/submit-button";
 import type { FormState } from "@/lib/forms";
 import { eventImageSrc } from "@/lib/images";
@@ -50,16 +50,7 @@ export function EventForm({ eventId, defaults }: { eventId?: string; defaults: E
       <input type="hidden" name="coverImageUrl" value={v.coverImageUrl ?? ""} />
 
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-medium">Cover image</p>
-          {eventId ? (
-            <Link href={`/organizer/events/${eventId}/banner`} className="inline-flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-fg hover:bg-primary/90">
-              <Sparkles className="size-3.5" aria-hidden /> Create with AI
-            </Link>
-          ) : (
-            <span className="text-xs text-muted">Save the draft first to create a cover with AI.</span>
-          )}
-        </div>
+        <p className="text-sm font-medium">Cover image</p>
         <label className="group relative flex aspect-[16/7] cursor-pointer items-center justify-center overflow-hidden rounded-3xl border border-dashed border-line-strong bg-fg/4 hover:bg-fg/6">
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -87,6 +78,19 @@ export function EventForm({ eventId, defaults }: { eventId?: string; defaults: E
           {preview && <span className="glass absolute bottom-3 right-3 rounded-full px-3 py-1 text-xs text-white">Change image</span>}
         </label>
         {(fileError || fe.coverImage) && <p className="text-xs text-danger">{fileError ?? fe.coverImage}</p>}
+        <div className="flex flex-col gap-2 rounded-3xl border border-line bg-fg/4 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted">No artwork? Generate a professional banner with your event details.</p>
+          {eventId ? (
+            <Link href={`/organizer/events/${eventId}/banner`} className={buttonClasses("primary", "md")}>
+              <Sparkles className="size-4" aria-hidden /> Create with AI
+            </Link>
+          ) : (
+            // A new event must exist first: this saves the draft, then opens the AI Banner Studio.
+            <button type="submit" name="intent" value="ai-banner" disabled={pending} className={buttonClasses("primary", "md")}>
+              <Sparkles className="size-4" aria-hidden /> Save draft &amp; create with AI
+            </button>
+          )}
+        </div>
       </div>
 
       <Field label="Event title" htmlFor="title" error={fe.title}>
