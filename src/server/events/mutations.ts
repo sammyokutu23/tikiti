@@ -228,6 +228,39 @@ export const ticketTypeSchema = z
     return { ...v, priceMinor: priceMinor ?? 0, salesStartAt, salesEndAt };
   });
 
+/** Adds several ticket types at once (quick add). All are created, or none. */
+export async function addTicketTypes(event: Event, actor: User, inputs: z.output<typeof ticketTypeSchema>[]) {
+  if (event.status === "cancelled") throw new UserError("Cancelled events can't be edited.");
+  if (!inputs.length) throw new UserError("Choose at least one ticket type.");
+  return db.transaction(async (tx) => {
+    // Serialize concurrent adds for this event so the 12-type cap holds.
+    await tx.select({ id: events.id }).from(events).where(eq(events.id, event.id)).for("update");
+    const existing = await tx.select({ name: ticketTypes.name }).from(ticketTypes).where(eq(ticketTypes.eventId, event.id));
+    if (existing.length + inputs.length > 12) throw new UserError(`An event can have at most 12 ticket types (this event has ${existing.length}).`);
+    const taken = new Set(existing.map((t) => t.name.trim().toLowerCase()));
+    const dup = inputs.find((i) => taken.has(i.name.trim().toLowerCase()));
+    if (dup) throw new UserError(`“${dup.name}” already exists on this event.`);
+    const rows = await tx
+      .insert(ticketTypes)
+      .values(
+        inputs.map((input, i) => ({
+          eventId: event.id,
+          name: input.name,
+          description: input.description,
+          priceMinor: input.priceMinor,
+          capacity: input.capacity,
+          maxPerOrder: input.maxPerOrder,
+          salesStartAt: input.salesStartAt,
+          salesEndAt: input.salesEndAt,
+          sortOrder: existing.length + i,
+        })),
+      )
+      .returning();
+    for (const tt of rows) await audit(tx, { actorUserId: actor.id, action: "ticket_type.created", entityType: "ticket_type", entityId: tt.id });
+    return rows;
+  });
+}
+
 export async function upsertTicketType(event: Event, actor: User, input: z.output<typeof ticketTypeSchema>, id?: string) {
   if (event.status === "cancelled") throw new UserError("Cancelled events can't be edited.");
   if (id) {

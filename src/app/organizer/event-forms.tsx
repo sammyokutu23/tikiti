@@ -2,13 +2,15 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { ImagePlus, Sparkles } from "lucide-react";
+import { Check, ImagePlus, Sparkles } from "lucide-react";
 import { Alert, Field, Input, Select, Textarea, buttonClasses } from "@/components/ui";
 import { SubmitButton } from "@/components/ui/submit-button";
 import type { FormState } from "@/lib/forms";
 import { eventImageSrc } from "@/lib/images";
 import { LocationPicker, type PickedPlace } from "@/components/maps/location-picker";
-import { saveEventAction, saveTicketTypeAction } from "./actions";
+import { TICKET_PRESETS } from "@/lib/ticket-presets";
+import { cn } from "@/lib/utils";
+import { addPresetTicketTypesAction, saveEventAction, saveTicketTypeAction } from "./actions";
 
 const CATEGORIES = [
   ["music", "Music"],
@@ -218,6 +220,118 @@ export function TicketTypeForm({
         <Input id={id("description")} name="description" defaultValue={v.description} maxLength={300} />
       </Field>
       <SubmitButton variant={ticketTypeId ? "secondary" : "primary"} pending={pending}>{submitLabel}</SubmitButton>
+    </form>
+  );
+}
+
+/** Quick add: tick common ticket types and enter just a price (quantity is prefilled). */
+export function QuickTicketTypes({ eventId, existingNames }: { eventId: string; existingNames: string[] }) {
+  const [state, action, pending] = useActionState(addPresetTicketTypesAction, {} as FormState);
+  const taken = new Set(existingNames.map((n) => n.trim().toLowerCase()));
+  const presets = TICKET_PRESETS.filter((p) => !taken.has(p.name.toLowerCase()));
+  if (!presets.length) return <p className="text-sm text-muted">All the common ticket types are already on this event. Use a custom ticket type below to add more.</p>;
+  return <QuickTicketTypesForm key={state.nonce ?? 0} eventId={eventId} presets={presets} state={state} action={action} pending={pending} />;
+}
+
+function QuickTicketTypesForm({
+  eventId,
+  presets,
+  state,
+  action,
+  pending,
+}: {
+  eventId: string;
+  presets: (typeof TICKET_PRESETS)[number][];
+  state: FormState;
+  action: (fd: FormData) => void;
+  pending: boolean;
+}) {
+  const v = state.ok ? {} : (state.values ?? {});
+  const fe = state.fieldErrors ?? {};
+  const [checked, setChecked] = useState<Set<string>>(() => new Set(presets.filter((p) => v[`${p.key}_on`] === "on").map((p) => p.key)));
+  const toggle = (key: string, on: boolean) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  return (
+    <form action={action} className="space-y-4" noValidate>
+      {state.error && <Alert tone="danger">{state.error}</Alert>}
+      {state.ok && <Alert tone="success">{state.message}</Alert>}
+      <input type="hidden" name="eventId" value={eventId} />
+      <ul className="divide-y divide-line rounded-2xl border border-line">
+        {presets.map((p) => {
+          const on = checked.has(p.key);
+          const free = "free" in p;
+          const id = (k: string) => `preset-${p.key}-${k}`;
+          const err = fe[`${p.key}_price`] ?? fe[`${p.key}_capacity`];
+          return (
+            <li key={p.key} className={cn("p-3 sm:p-4", on && "bg-fg/[0.03]")}>
+              <div className="flex flex-wrap items-center gap-3">
+                {/* A button, not a checkbox: React resets the form after submit, which would untick a native checkbox. */}
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={on}
+                  onClick={() => toggle(p.key, !on)}
+                  className="flex min-w-40 flex-1 items-start gap-3 text-left"
+                >
+                  <span className={cn("mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border", on ? "border-primary bg-primary text-primary-fg" : "border-line-strong")}>
+                    {on && <Check className="size-3.5" strokeWidth={3} aria-hidden />}
+                  </span>
+                  <span>
+                    <span className="block font-semibold">{p.name}</span>
+                    {p.description && <span className="block text-xs text-muted">{p.description}</span>}
+                  </span>
+                </button>
+                {on && <input type="hidden" name={`${p.key}_on`} value="on" />}
+                {on && (
+                  <div className="flex w-full gap-2 sm:w-auto">
+                    {free ? (
+                      <div className="w-full sm:w-36">
+                        <span className="mb-1 block text-[11px] text-muted">Price (KES)</span>
+                        <span className="flex h-11 items-center rounded-xl border border-line px-3 text-sm text-muted">Free · KES 0</span>
+                      </div>
+                    ) : (
+                      <div className="w-full sm:w-36">
+                        <label htmlFor={id("price")} className="mb-1 block text-[11px] text-muted">Price (KES)</label>
+                        <Input
+                          id={id("price")}
+                          name={`${p.key}_price`}
+                          inputMode="numeric"
+                          placeholder="e.g. 1500"
+                          defaultValue={v[`${p.key}_price`]}
+                          error={fe[`${p.key}_price`]}
+                          autoFocus={!v[`${p.key}_price`]}
+                        />
+                      </div>
+                    )}
+                    <div className="w-full sm:w-28">
+                      <label htmlFor={id("capacity")} className="mb-1 block text-[11px] text-muted">Quantity</label>
+                      <Input
+                        id={id("capacity")}
+                        name={`${p.key}_capacity`}
+                        type="number"
+                        min={1}
+                        title="Quantity available"
+                        defaultValue={v[`${p.key}_capacity`] || String(p.capacity)}
+                        error={fe[`${p.key}_capacity`]}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              {on && err && <p className="mt-2 text-xs text-danger">{err}</p>}
+            </li>
+          );
+        })}
+      </ul>
+      <p className="text-xs text-subtle">Enter the price and how many tickets are available (prefilled, change it if needed). Up to 10 per order. You can edit names, sale dates and limits after adding.</p>
+      <SubmitButton pending={pending} disabled={!checked.size}>
+        {checked.size > 1 ? `Add ${checked.size} ticket types` : "Add ticket type"}
+      </SubmitButton>
     </form>
   );
 }

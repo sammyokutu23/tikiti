@@ -12,6 +12,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { requireOrganizer, requireOwnedEvent, requireUser } from "@/server/auth/guards";
 import { cancelEvent, refundBooking, revokeTicket } from "@/server/bookings/refunds";
 import {
+  addTicketTypes,
   createEvent,
   eventFormSchema,
   LOCATION_REQUIRED_MESSAGE,
@@ -28,6 +29,7 @@ import { applyAsOrganizer, organizerApplicationSchema } from "@/server/organizer
 import { saveEventImage } from "@/server/storage";
 import { generateEventBanners, parseOverlayOptions, saveBannerAsCover } from "@/server/banners/service";
 import { generateBannerSchema } from "@/server/banners/prompt";
+import { TICKET_PRESETS } from "@/lib/ticket-presets";
 
 const EVENT_FIELDS = ["title", "summary", "description", "category", "venueName", "venueAddress", "city", "timezone", "startsLocal", "endsLocal", "refundPolicy", "coverImageUrl",
   "latitude", "longitude", "locationConfirmed", "locationProvider", "locationPlaceId", "arrivalInstructions", "installmentsEnabled"];
@@ -119,6 +121,41 @@ export async function saveTicketTypeAction(_: FormState, fd: FormData): Promise<
   }
   revalidatePath(`/organizer/events/${ev.id}`);
   return { ok: true, message: "Ticket type saved.", nonce: Date.now() };
+}
+
+/** Quick add: the organizer ticks common ticket types and fills in a price and quantity for each. */
+export async function addPresetTicketTypesAction(_: FormState, fd: FormData): Promise<FormState> {
+  const ctx = await requireOrganizer();
+  const ev = await requireOwnedEvent(String(fd.get("eventId")), ctx);
+  const values: Record<string, string> = {};
+  const errors: Record<string, string> = {};
+  const inputs = [];
+  for (const p of TICKET_PRESETS) {
+    const on = fd.get(`${p.key}_on`) === "on";
+    const price = "free" in p ? "0" : String(fd.get(`${p.key}_price`) ?? "").trim();
+    const capacity = String(fd.get(`${p.key}_capacity`) ?? "").trim();
+    Object.assign(values, { [`${p.key}_on`]: on ? "on" : "", [`${p.key}_price`]: price, [`${p.key}_capacity`]: capacity });
+    if (!on) continue;
+    if (!("free" in p) && (price === "" || price === "0")) {
+      errors[`${p.key}_price`] = "Enter a price";
+      continue;
+    }
+    const parsed = ticketTypeSchema.safeParse({ name: p.name, description: p.description, price, capacity, timezone: ev.timezone });
+    if (!parsed.success) {
+      for (const [k, msg] of Object.entries(fieldErrors(parsed.error))) errors[`${p.key}_${k}`] = msg;
+      continue;
+    }
+    inputs.push(parsed.data);
+  }
+  if (Object.keys(errors).length) return { fieldErrors: errors, values };
+  if (!inputs.length) return { error: "Tick at least one ticket type and enter its price.", values };
+  try {
+    await addTicketTypes(ev, ctx.user, inputs);
+  } catch (err) {
+    return { error: userMessage(err), values };
+  }
+  revalidatePath(`/organizer/events/${ev.id}`);
+  return { ok: true, message: inputs.length === 1 ? "Ticket type added." : `${inputs.length} ticket types added.`, nonce: Date.now() };
 }
 
 export async function ticketTypeOpAction(fd: FormData) {

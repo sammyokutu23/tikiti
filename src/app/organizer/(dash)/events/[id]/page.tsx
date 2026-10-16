@@ -14,7 +14,7 @@ import { ticketTypesForEvent } from "@/server/events/queries";
 import { eventSalesStats } from "@/server/organizers/reports";
 import { cancelEventAction, publishAction, ticketTypeOpAction, toggleInstallmentsAction } from "@/app/organizer/actions";
 import { getPlanPolicy } from "@/server/plans/policy";
-import { EventForm, TicketTypeForm } from "@/app/organizer/event-forms";
+import { EventForm, QuickTicketTypes, TicketTypeForm } from "@/app/organizer/event-forms";
 
 export const metadata = { title: "Manage event" };
 
@@ -170,8 +170,15 @@ export default async function ManageEventPage({ params, searchParams }: PageProp
           ))}
           {ev.status !== "cancelled" && (
             <Card className="p-5">
-              <h3 className="mb-4 font-semibold">Add a ticket type</h3>
-              <TicketTypeForm eventId={ev.id} submitLabel="Add ticket type" />
+              <h3 className="font-semibold">Add ticket types</h3>
+              <p className="mb-4 text-sm text-muted">Tick the ones you want and enter a price.</p>
+              <QuickTicketTypes eventId={ev.id} existingNames={types.map((t) => t.name)} />
+              <details className="mt-5 border-t border-line pt-4">
+                <summary className="cursor-pointer text-sm font-medium text-muted hover:text-fg">Need something else? Create a custom ticket type</summary>
+                <div className="mt-4">
+                  <TicketTypeForm eventId={ev.id} submitLabel="Add ticket type" />
+                </div>
+              </details>
             </Card>
           )}
           <p className="text-xs text-subtle">
