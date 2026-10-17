@@ -50,3 +50,6 @@ next-env.d.ts
 .db.log
 .dev.log
 .prod.log
+
+# Investor due-diligence reports (local only; they describe unfixed weaknesses)
+/reports/
