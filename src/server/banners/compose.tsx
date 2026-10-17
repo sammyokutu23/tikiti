@@ -125,7 +125,7 @@ function Overlay({ o, format, width, height }: { o: BannerOverlay; format: Banne
                 padding: `${Math.round(meta * 0.45)}px ${Math.round(meta * 1.1)}px`,
               }}
             >
-              Get tickets on Tikiti
+              Get tickets on TikoSoko
             </div>
           </div>
         )}

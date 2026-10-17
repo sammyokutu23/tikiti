@@ -212,7 +212,7 @@ describe("geocoding (Nominatim adapter)", () => {
     const r = await searchVenues("KICC Nairobi", fake);
     expect(r[0].city).toBe("Nairobi");
     expect(calls[0].url).toContain("countrycodes=ke");
-    expect(calls[0].ua).toMatch(/^TikitiTicketing/);
+    expect(calls[0].ua).toMatch(/^TikoSokoTicketing/);
     await searchVenues("  kicc   nairobi ", fake);
     expect(calls).toHaveLength(1); // cached
     expect(await searchVenues("ab", fake)).toEqual([]);

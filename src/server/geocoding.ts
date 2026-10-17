@@ -113,7 +113,7 @@ export async function searchVenues(query: string, fetcher: Fetcher = fetch): Pro
     try {
       const res = await fetcher(url, {
         signal: ctrl.signal,
-        headers: { "User-Agent": `TikitiTicketing/0.1 (${contact})`, Accept: "application/json" },
+        headers: { "User-Agent": `TikoSokoTicketing/0.1 (${contact})`, Accept: "application/json" },
       });
       if (!res.ok) throw new GeocoderUnavailableError(`Venue search failed (${res.status}).`);
       return normalizeNominatim((await res.json()) as NominatimItem[]);

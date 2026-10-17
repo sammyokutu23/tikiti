@@ -40,7 +40,7 @@ export default async function MockPayPage({ params, searchParams }: PageProps<"/
       </div>
       <div className="overflow-hidden rounded-[2rem] border border-line bg-surface">
         <div className="space-y-1 border-b border-line p-6 text-center">
-          <p className="text-xs uppercase tracking-widest text-muted">Mock Payments · Merchant: Tikiti</p>
+          <p className="text-xs uppercase tracking-widest text-muted">Mock Payments · Merchant: TikoSoko</p>
           <p className="text-4xl font-bold tabular-nums">{formatMoney(payment.amountMinor, payment.currency)}</p>
           <p className="text-sm text-muted">{row.eventTitle} · {row.booking.reference}</p>
         </div>

@@ -6,7 +6,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   await requireAdmin();
   return (
     <DashShell
-      title="Tikiti Admin"
+      title="TikoSoko Admin"
       badge={<Badge tone="info">Staff</Badge>}
       items={[
         { href: "/admin", label: "Overview", exact: true },

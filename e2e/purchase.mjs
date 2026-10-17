@@ -49,7 +49,7 @@ const [dl] = await Promise.all([p.waitForEvent("download"), p.getByRole("link", 
 const path = await dl.path();
 const fs = await import("node:fs");
 assert.equal(fs.readFileSync(path).subarray(0, 5).toString(), "%PDF-");
-assert.match(dl.suggestedFilename(), new RegExp(`tikiti-jazz-on-the-lawn-${ref}\\.pdf`));
+assert.match(dl.suggestedFilename(), new RegExp(`tikosoko-jazz-on-the-lawn-${ref}\\.pdf`));
 step(`downloaded ${dl.suggestedFilename()}`);
 
 await p.getByRole("link", { name: /View tickets/ }).click();

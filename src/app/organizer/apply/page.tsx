@@ -16,7 +16,7 @@ export default async function ApplyPage() {
     <main className="mx-auto grid w-full max-w-5xl gap-10 px-4 pb-20 pt-8 sm:px-6 lg:grid-cols-[1fr_340px]">
       <div className="space-y-6">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Sell tickets on Tikiti</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Sell tickets on TikoSoko</h1>
           <p className="text-muted">Tell us about your organization. You can start building draft events right away; we verify organizers before events go live.</p>
         </div>
         {profile?.verificationStatus === "rejected" && (

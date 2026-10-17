@@ -1,5 +1,5 @@
 /**
- * Tikiti database schema (PostgreSQL, Drizzle ORM).
+ * TikoSoko database schema (PostgreSQL, Drizzle ORM).
  *
  * Conventions
  *  - Money is stored as integer minor units (KES cents) in `*_minor` columns.

@@ -79,7 +79,7 @@ export async function renderBookingPdf(bookingId: string, opts: { createdAt?: Da
   const bytes = await renderTicketsPdf(data, opts);
   return {
     bytes,
-    filename: `tikiti-${slugify(eventSlug).slice(0, 40)}-${reference}.pdf`,
+    filename: `tikosoko-${slugify(eventSlug).slice(0, 40)}-${reference}.pdf`,
     count: data.length,
     tickets: data.map((t) => ({ ticketType: t.ticketType, attendeeName: t.attendeeName, label: t.sequenceLabel, status: t.status })),
   };
@@ -89,7 +89,7 @@ export async function renderSingleTicketPdf(bookingId: string, ticketId: string)
   const { data, eventSlug } = await loadTicketPdfData(bookingId, [ticketId]);
   if (data.length !== 1) throw new Error("Ticket not found");
   const bytes = await renderTicketsPdf(data);
-  return { bytes, filename: `tikiti-${slugify(eventSlug).slice(0, 40)}-${data[0].code}.pdf` };
+  return { bytes, filename: `tikosoko-${slugify(eventSlug).slice(0, 40)}-${data[0].code}.pdf` };
 }
 
 export function pdfResponse(bytes: Uint8Array, filename: string, disposition: "attachment" | "inline" = "attachment") {

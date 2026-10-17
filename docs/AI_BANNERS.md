@@ -54,7 +54,7 @@ OPENAI_IMAGE_QUALITY=medium      # low | medium | high | auto
 5. **Preview.** `GET /api/organizer/events/<id>/banner` composes on the server.
    - It crops to the format with `sharp`, using attention-based cover.
    - It overlays text with our own typography (Geist via `next/og`/satori): the title, date and
-     time (in the event's time zone), venue, an optional "Get tickets on Tikiti" button and the
+     time (in the event's time zone), venue, an optional "Get tickets on TikoSoko" button and the
      organizer name.
    - **Every string comes from the event row in the database**, never from the browser.
    - Formats:

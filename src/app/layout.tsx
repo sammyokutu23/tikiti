@@ -13,7 +13,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "Tikiti — Event tickets in Kenya", template: "%s · Tikiti" },
+  title: { default: "TikoSoko — Event tickets in Kenya", template: "%s · TikoSoko" },
   description: "Discover concerts, festivals, conferences and more across Kenya. Book securely and get QR tickets instantly.",
 };
 

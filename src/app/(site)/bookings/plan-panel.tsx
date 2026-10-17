@@ -15,7 +15,7 @@ const END_REASON: Record<string, string> = {
   missed_installment: "an installment wasn't paid in time",
   deadline_passed: "the balance wasn't paid by the final deadline",
   customer_cancelled: "you cancelled it",
-  admin_cancelled: "it was cancelled by Tikiti support",
+  admin_cancelled: "it was cancelled by TikoSoko support",
   event_cancelled: "the event was cancelled",
   hold_expired: "the deposit wasn't paid before the reservation expired",
 };

@@ -1,4 +1,4 @@
-# Tikiti — event ticketing for Kenya (prototype)
+# TikoSoko — event ticketing for Kenya (prototype)
 
 A mobile-first event ticketing marketplace. Customers discover events and buy tickets (guest
 checkout, KES). They get one QR-coded ticket per admission, as a PDF and by email. Organizers

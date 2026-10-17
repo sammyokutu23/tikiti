@@ -37,7 +37,7 @@ export type EmailKind =
  * Service messages the recipient needs regardless of complaints: tickets, refunds,
  * changes to an event they paid for, and sign-in codes. A hard bounce still blocks
  * them (the address doesn't work); a spam complaint only blocks the others.
- * Tikiti sends no marketing email, so there is no marketing consent to check.
+ * TikoSoko sends no marketing email, so there is no marketing consent to check.
  */
 export const CRITICAL_KINDS: ReadonlySet<EmailKind> = new Set([
   "booking_confirmation",

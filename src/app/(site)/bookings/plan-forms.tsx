@@ -133,7 +133,7 @@ export function PlanCheckoutForm({
       </SubmitButton>
       <p className="flex items-start justify-center gap-1.5 text-center text-xs text-subtle">
         <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-        <span>Enter your PIN only in the official M-Pesa prompt on your phone. Tikiti will never ask for your M-Pesa PIN.</span>
+        <span>Enter your PIN only in the official M-Pesa prompt on your phone. TikoSoko will never ask for your M-Pesa PIN.</span>
       </p>
     </form>
   );
@@ -154,7 +154,7 @@ export function PayInstallmentForm({ reference, access, idempotencyKey, phone, a
       <SubmitButton full pending={pending} pendingLabel="Sending M-Pesa prompt…">
         <Smartphone className="size-4" aria-hidden /> Pay {label} · {formatMoney(amountMinor)}
       </SubmitButton>
-      <p className="text-center text-xs text-subtle">You&apos;ll approve it on your phone. Tikiti never asks for your PIN.</p>
+      <p className="text-center text-xs text-subtle">You&apos;ll approve it on your phone. TikoSoko never asks for your PIN.</p>
     </form>
   );
 }

@@ -61,7 +61,7 @@ export async function hideEventAction(fd: FormData) {
 export async function adminCancelEventAction(fd: FormData) {
   const admin = await requireAdmin();
   await run(fd, "/admin/events", async () => {
-    const reason = String(fd.get("reason") ?? "").trim() || "Cancelled by Tikiti moderation";
+    const reason = String(fd.get("reason") ?? "").trim() || "Cancelled by TikoSoko moderation";
     const r = await cancelEvent({ eventId: String(fd.get("eventId")), actorUserId: admin.id, reason });
     return `Event cancelled; ${r.refunded} booking(s) refunded.`;
   });
@@ -100,7 +100,7 @@ export async function adminRefundAction(fd: FormData) {
       refundBooking(tx, {
         bookingId: id,
         actorUserId: admin.id,
-        reason: String(fd.get("reason") ?? "").slice(0, 300) || "Refunded by Tikiti support",
+        reason: String(fd.get("reason") ?? "").slice(0, 300) || "Refunded by TikoSoko support",
         returnInventory: fd.get("returnInventory") === "on",
       }),
     );
@@ -111,7 +111,7 @@ export async function adminRefundAction(fd: FormData) {
 export async function adminRevokeTicketAction(fd: FormData) {
   const admin = await requireAdmin();
   await run(fd, "/admin/tickets", async () => {
-    await revokeTicket({ ticketId: String(fd.get("ticketId")), actorUserId: admin.id, reason: String(fd.get("reason") ?? "") || "Revoked by Tikiti support" });
+    await revokeTicket({ ticketId: String(fd.get("ticketId")), actorUserId: admin.id, reason: String(fd.get("reason") ?? "") || "Revoked by TikoSoko support" });
     return "Ticket revoked.";
   });
 }

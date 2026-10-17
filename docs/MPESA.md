@@ -2,8 +2,8 @@
 
 The customer chooses M-Pesa, checks their phone number and taps **Pay with M-Pesa**. Safaricom
 sends a payment prompt to their phone, and they enter their PIN **in the official M-Pesa
-prompt**. Tikiti never asks for, receives or stores an M-Pesa PIN. The booking is confirmed only
-after Tikiti has verified evidence from Safaricom. Then tickets are issued, the PDF is generated
+prompt**. TikoSoko never asks for, receives or stores an M-Pesa PIN. The booking is confirmed only
+after TikoSoko has verified evidence from Safaricom. Then tickets are issued, the PDF is generated
 and the email is sent, through the same pipeline as every other booking.
 
 Source of truth: the official Daraja docs at [developer.safaricom.co.ke](https://developer.safaricom.co.ke/)
@@ -77,7 +77,7 @@ created ──STK accepted──▶ pending ──verified result──▶ succe
     shown to admins.
 - **Definitive rejections are safe to retry.** Examples: auth failure, invalid request,
   rate-limited or "busy". No prompt was sent, so the customer gets a clear message.
-- **Callbacks are untrusted.** Safaricom does not sign them, so Tikiti does not pretend to verify
+- **Callbacks are untrusted.** Safaricom does not sign them, so TikoSoko does not pretend to verify
   a signature. Instead, each callback must:
   1. Arrive on a secret, unguessable URL path (`DARAJA_CALLBACK_TOKEN`), plus an optional IP
      allowlist.

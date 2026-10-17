@@ -59,6 +59,7 @@ const MUTED = rgb(0.42, 0.42, 0.45);
 const LINE = rgb(0.85, 0.85, 0.87);
 const WHITE = rgb(1, 1, 1);
 const LINK = rgb(0.1, 0.32, 0.75);
+const BRAND_GOLD = rgb(0.949, 0.722, 0.294); // #f2b84b
 
 const PAGE_W = 595.28; // A4
 const PAGE_H = 841.89;
@@ -76,10 +77,10 @@ export async function renderTicketsPdf(tickets: TicketPdfData[], opts: { created
     pdf.setModificationDate(opts.createdAt);
   }
   pdf.setTitle(`${tickets[0].event.title} — Tickets ${tickets[0].bookingReference}`);
-  pdf.setAuthor("Tikiti");
+  pdf.setAuthor("TikoSoko");
   pdf.setSubject("Event ticket");
-  pdf.setCreator("Tikiti ticketing");
-  pdf.setProducer("Tikiti / pdf-lib");
+  pdf.setCreator("TikoSoko ticketing");
+  pdf.setProducer("TikoSoko / pdf-lib");
 
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -130,7 +131,8 @@ function drawTicketPage(page: PDFPage, t: TicketPdfData, f: Fonts) {
   // ── Header band ──
   const headerH = 58;
   roundedRect(page, M, y - headerH, W, headerH, 14, INK);
-  text(page, "TIKITI", M + 22, y - 36, bold, 22, WHITE);
+  text(page, "Tiko", M + 22, y - 36, bold, 22, WHITE);
+  text(page, "Soko", M + 22 + bold.widthOfTextAtSize("Tiko", 22), y - 36, bold, 22, BRAND_GOLD);
   const tag = "E-TICKET  ·  ADMIT ONE";
   text(page, tag, M + W - 22 - bold.widthOfTextAtSize(tag, 9), y - 33, bold, 9, WHITE);
   y -= headerH + 14;
@@ -244,7 +246,7 @@ function drawTicketPage(page: PDFPage, t: TicketPdfData, f: Fonts) {
   const footer = [
     `Need help? ${t.supportEmail}  ·  Booking ${t.bookingReference}`,
     `Lost this ticket? Use the link in your confirmation email, or recover your booking at ${t.ticketPageUrl}`,
-    "Refunds follow the event's refund policy. Tikiti verifies every ticket at the gate — copies or edited tickets are rejected.",
+    "Refunds follow the event's refund policy. TikoSoko verifies every ticket at the gate — copies or edited tickets are rejected.",
   ];
   for (const ln of footer.flatMap((l) => wrap(safe(l, regular), regular, 8, W))) {
     text(page, ln, M, y, regular, 8, MUTED);

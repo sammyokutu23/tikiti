@@ -15,9 +15,9 @@ export type Rendered = { subject: string; html: string; text: string };
 type Audience = "customer" | "organizer" | "account";
 
 const FOOTER: Record<Audience, string> = {
-  customer: "You received this because a booking was made with this email address on Tikiti.",
-  organizer: "You received this because you organise events on Tikiti.",
-  account: "You received this because of activity on your Tikiti account.",
+  customer: "You received this because a booking was made with this email address on TikoSoko.",
+  organizer: "You received this because you organise events on TikoSoko.",
+  account: "You received this because of activity on your TikoSoko account.",
 };
 
 function layout(opts: { title: string; preheader: string; body: string; supportEmail: string; audience: Audience }) {
@@ -26,7 +26,7 @@ function layout(opts: { title: string; preheader: string; body: string; supportE
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(opts.preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f2f2f3;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fff;border-radius:16px;overflow:hidden">
-<tr><td style="background:#111;padding:20px 28px;color:#fff;font-weight:800;font-size:20px;letter-spacing:.5px">TIKITI</td></tr>
+<tr><td style="background:#111;padding:20px 28px;color:#fff;font-weight:800;font-size:20px;letter-spacing:.2px">Tiko<span style="color:#f2b84b">Soko</span></td></tr>
 <tr><td style="padding:28px">${opts.body}</td></tr>
 <tr><td style="padding:18px 28px;border-top:1px solid #eee;color:#777;font-size:12px;line-height:1.5">
 Questions? Reply to this email or contact <a href="mailto:${esc(opts.supportEmail)}" style="color:#111">${esc(opts.supportEmail)}</a>.<br>
@@ -232,7 +232,7 @@ ${h1("Your tickets aren't confirmed yet")}
 ${para(`Hi ${esc(firstName(d.buyerName))}, the payment for booking <b>${esc(d.reference)}</b> (${esc(d.eventTitle)}) didn't go through: ${esc(d.reason)}. No money was taken for this attempt.`)}
 ${para(d.holdOpen ? "Your tickets are still reserved for a short time — you can try again now." : "Your reservation has lapsed, but you can book again if tickets are still available.")}
 <p style="margin:0 0 20px">${button(d.retryUrl, d.holdOpen ? "Try again" : "Book again")}</p>
-${para("Never share your M-Pesa PIN. Tikiti will never ask for it — you only enter it on your phone's M-Pesa prompt.", true)}`,
+${para("Never share your M-Pesa PIN. TikoSoko will never ask for it — you only enter it on your phone's M-Pesa prompt.", true)}`,
   });
   return {
     subject,
@@ -442,7 +442,7 @@ const scheduleText = (d: PlanEmailData) => [
   `Paid so far: ${formatMoney(d.paidMinor, d.currency)} · Balance: ${formatMoney(d.outstandingMinor, d.currency)}`,
 ];
 
-const PIN_NOTE = "Each payment is a separate M-Pesa prompt that you approve on your phone. Tikiti will never ask for your M-Pesa PIN.";
+const PIN_NOTE = "Each payment is a separate M-Pesa prompt that you approve on your phone. TikoSoko will never ask for your M-Pesa PIN.";
 
 function planEmail(d: PlanEmailData, o: { subject: string; eyebrow: string; title: string; intro: string; preheader: string; noteHtml?: string; cta?: string; showSchedule?: boolean; extraText?: string[] }): Rendered {
   const html = layout({
@@ -556,7 +556,7 @@ const END_REASON: Record<string, string> = {
   missed_installment: "an installment wasn't paid in time",
   deadline_passed: "the balance wasn't paid by the final deadline",
   customer_cancelled: "you cancelled it",
-  admin_cancelled: "it was cancelled by Tikiti support",
+  admin_cancelled: "it was cancelled by TikoSoko support",
   event_cancelled: "the event was cancelled",
 };
 

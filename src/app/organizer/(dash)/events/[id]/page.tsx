@@ -63,7 +63,7 @@ export default async function ManageEventPage({ params, searchParams }: PageProp
           </div>
           <p className="text-sm text-muted">
             {ev.status === "draft" && (publishable ? "Only you can see this event. Publish it to start selling." : "Drafts can be published once your organizer account is verified.")}
-            {ev.status === "published" && (ev.isHidden ? `Hidden by Tikiti moderation: ${ev.hiddenReason ?? ""}` : "Live — visible to the public and on sale.")}
+            {ev.status === "published" && (ev.isHidden ? `Hidden by TikoSoko moderation: ${ev.hiddenReason ?? ""}` : "Live — visible to the public and on sale.")}
             {ev.status === "cancelled" && `Cancelled: ${ev.cancellationReason ?? ""}`}
           </p>
         </div>
@@ -102,7 +102,7 @@ export default async function ManageEventPage({ params, searchParams }: PageProp
             {ev.installmentsEnabled && daysAway < planPolicy.minDaysBeforeEvent && (
               <p className="text-xs text-warning">Not offered right now: plans need the event to be more than {planPolicy.minDaysBeforeEvent} days away.</p>
             )}
-            {ev.installmentsEnabled && !planPolicy.enabled && <p className="text-xs text-warning">Payment plans are currently switched off platform-wide by Tikiti.</p>}
+            {ev.installmentsEnabled && !planPolicy.enabled && <p className="text-xs text-warning">Payment plans are currently switched off platform-wide by TikoSoko.</p>}
             {ev.installmentsEnabled && ev.status === "draft" && <p className="text-xs text-muted">Buyers will see the option once the event is published.</p>}
           </div>
           <form action={toggleInstallmentsAction} className="shrink-0">

@@ -1,6 +1,6 @@
 # Email delivery (Resend)
 
-Tikiti sends transactional email only, through one service (`src/server/email/`). In production the
+TikoSoko sends transactional email only, through one service (`src/server/email/`). In production the
 transport is [Resend](https://resend.com/docs/send-with-nodejs). There is no marketing or newsletter
 email, so no marketing-consent or unsubscribe flow exists. If you add marketing email later, build it
 separately with consent, an unsubscribe link, and Resend's Audiences/Topics.
@@ -121,9 +121,9 @@ by default. Nothing changes unless you opt in to sending them through Resend:
 
 1. In Clerk → Webhooks, add `https://<your-site>/api/webhooks/clerk` with the event `email.created`. Put
    its signing secret in `CLERK_WEBHOOK_SIGNING_SECRET`.
-2. In Clerk → Emails, turn off **Delivered by Clerk** for the templates you want Tikiti to send.
+2. In Clerk → Emails, turn off **Delivered by Clerk** for the templates you want TikoSoko to send.
 
-Clerk still renders the email. Tikiti delivers it through Resend, deduplicated per Clerk email id,
+Clerk still renders the email. TikoSoko delivers it through Resend, deduplicated per Clerk email id,
 with 3 quick attempts because codes expire. The content lives only in the job's `secret` field, which is
 deleted when the job finishes. The stored subject is a placeholder, since Clerk subjects can contain the
 code.

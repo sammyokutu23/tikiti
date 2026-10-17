@@ -218,7 +218,7 @@ describe("ticket confirmation email", () => {
     expect(m.attachments).toHaveLength(1);
     const a = m.attachments![0];
     expect(a.content_type).toBe("application/pdf");
-    expect(a.filename).toMatch(/^tikiti-[a-z0-9-]+-[A-Z0-9-]+\.pdf$/);
+    expect(a.filename).toMatch(/^tikosoko-[a-z0-9-]+-[A-Z0-9-]+\.pdf$/);
     const pdf = await PDFDocument.load(Buffer.from(a.content, "base64"));
     expect(pdf.getPageCount()).toBe(3); // one page per ticket
 

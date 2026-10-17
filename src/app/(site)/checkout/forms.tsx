@@ -136,7 +136,7 @@ export function PaymentForm({
       {method === "mpesa" && mode !== "simulated" && (
         <p className="flex items-start justify-center gap-1.5 text-center text-xs text-subtle">
           <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-          <span>Enter your PIN only in the official M-Pesa prompt on your phone. Tikiti will never ask for your M-Pesa PIN.</span>
+          <span>Enter your PIN only in the official M-Pesa prompt on your phone. TikoSoko will never ask for your M-Pesa PIN.</span>
         </p>
       )}
       {mode === "sandbox" && (

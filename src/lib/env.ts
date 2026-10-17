@@ -52,7 +52,7 @@ export const env = {
       const name = (process.env.RESEND_FROM_NAME ?? "").replace(/["<>\r\n\\]/g, "").trim();
       return name ? `"${name}" <${email}>` : email;
     }
-    return process.env.EMAIL_FROM ?? "Tikiti <tickets@example.com>";
+    return process.env.EMAIL_FROM ?? "TikoSoko <tickets@example.com>";
   },
   get emailReplyTo() {
     return process.env.RESEND_REPLY_TO?.trim() || this.supportEmail;

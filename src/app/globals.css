@@ -1,11 +1,11 @@
 @import "tailwindcss";
 
 /*
- * Tikiti design tokens. Dark (default): near-black canvas with soft charcoal
+ * TikoSoko design tokens. Dark (default): near-black canvas with soft charcoal
  * gradients, white pill primary actions and glassy surfaces. Light: the same
  * layout on a soft off-white canvas with black pill actions.
  *
- * Theme choice: <html data-theme="light|dark"> (from the tikiti-theme cookie);
+ * Theme choice: <html data-theme="light|dark"> (from the tikiti-theme cookie — it keeps its old name so saved choices survive the rebrand);
  * without the attribute the visitor's OS preference decides.
  */
 :root {
@@ -29,6 +29,13 @@
   --glow-2: rgb(255 255 255 / 0.03);
   --nav-glass: rgb(30 30 34 / 0.55);
   --shimmer: rgb(255 255 255 / 0.05);
+  /* TikoSoko logo: the dark variant from the brand sheet. */
+  --brand-ink: #f5efe3;
+  --brand-accent: #f2b84b;
+  --brand-cart: #a8372a;
+  --brand-ticket: #f2b84b;
+  --brand-check: #f5efe3;
+  --brand-wheel: #f5efe3;
   color-scheme: dark;
 }
 
@@ -54,6 +61,12 @@
     --glow-2: rgb(0 0 0 / 0.02);
     --nav-glass: rgb(255 255 255 / 0.72);
     --shimmer: rgb(0 0 0 / 0.05);
+    --brand-ink: #24484a;
+    --brand-accent: #9b3324;
+    --brand-cart: #9b3324;
+    --brand-ticket: #24484a;
+    --brand-check: #f2b84b;
+    --brand-wheel: #24484a;
     color-scheme: light;
   }
 }
@@ -79,6 +92,12 @@
   --glow-2: rgb(0 0 0 / 0.02);
   --nav-glass: rgb(255 255 255 / 0.72);
   --shimmer: rgb(0 0 0 / 0.05);
+  --brand-ink: #24484a;
+  --brand-accent: #9b3324;
+  --brand-cart: #9b3324;
+  --brand-ticket: #24484a;
+  --brand-check: #f2b84b;
+  --brand-wheel: #24484a;
   color-scheme: light;
 }
 

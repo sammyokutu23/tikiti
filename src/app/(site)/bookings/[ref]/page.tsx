@@ -224,7 +224,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
 
           {access.user && !booking.userId && (
             <Card className="space-y-3 p-5 text-sm">
-              <p className="text-muted">Keep this booking in your Tikiti account.</p>
+              <p className="text-muted">Keep this booking in your TikoSoko account.</p>
               <form action={claimBookingAction}>
                 <input type="hidden" name="reference" value={booking.reference} />
                 <input type="hidden" name="access" value={access.token ?? ""} />

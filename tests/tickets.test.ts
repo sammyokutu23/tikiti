@@ -91,7 +91,7 @@ describe("ticket PDFs", () => {
     const b = await buyTickets(event.id, [[ga.id, 2], [vip.id, 1]]);
     const pdf = await renderBookingPdf(b.id);
     expect(Buffer.from(pdf.bytes.subarray(0, 5)).toString()).toBe("%PDF-");
-    expect(pdf.filename).toMatch(new RegExp(`^tikiti-.+-${b.reference}\\.pdf$`));
+    expect(pdf.filename).toMatch(new RegExp(`^tikosoko-.+-${b.reference}\\.pdf$`));
     const doc = await PDFDocument.load(pdf.bytes);
     expect(doc.getPageCount()).toBe(3);
 

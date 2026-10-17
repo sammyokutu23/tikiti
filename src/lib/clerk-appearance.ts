@@ -1,5 +1,5 @@
 /**
- * Clerk component theme. Colours point at the Tikiti design tokens (globals.css),
+ * Clerk component theme. Colours point at the TikoSoko design tokens (globals.css),
  * so sign-in / sign-up / the user menu follow the light or dark theme automatically.
  */
 export const clerkAppearance = {
