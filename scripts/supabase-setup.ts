@@ -59,6 +59,10 @@ async function setupCron(siteUrl: string) {
     )`;
     await pool.query("select cron.schedule('tikosoko-tick', '* * * * *', $1)", [command]);
     console.log(`Cron: "tikosoko-tick" runs every minute → ${endpoint}`);
+    // Remove the job and secret from before the TikoSoko rebrand, so the tick doesn't run twice.
+    const legacy = await pool.query("select cron.unschedule(jobid) from cron.job where jobname = 'tikiti-tick'");
+    await pool.query("delete from vault.secrets where name = 'tikiti_cron_secret'");
+    if (legacy.rowCount) console.log('Cron: removed the old "tikiti-tick" job');
   } finally {
     await pool.end();
   }
