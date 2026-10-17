@@ -3,8 +3,8 @@
  * prototype; production with several instances needs a shared store (Redis/PG).
  */
 type Bucket = { count: number; resetAt: number };
-const store = (globalThis as unknown as { __tikitiRl?: Map<string, Bucket> }).__tikitiRl ?? new Map<string, Bucket>();
-(globalThis as unknown as { __tikitiRl?: Map<string, Bucket> }).__tikitiRl = store;
+const store = (globalThis as unknown as { __tikosokoRl?: Map<string, Bucket> }).__tikosokoRl ?? new Map<string, Bucket>();
+(globalThis as unknown as { __tikosokoRl?: Map<string, Bucket> }).__tikosokoRl = store;
 
 export function rateLimit(key: string, limit: number, windowMs: number): { ok: boolean; retryAfterMs: number } {
   const now = Date.now();

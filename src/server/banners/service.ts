@@ -108,7 +108,7 @@ export async function generateEventBanners(args: { actor: User; event: Event; in
   try {
     generation = await db.transaction(async (tx) => {
       // Serialises quota checks so concurrent requests can't both pass a limit.
-      await tx.execute(sql`select pg_advisory_xact_lock(hashtext('tikiti:banner_quota'))`);
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext('tikosoko:banner_quota'))`);
       await tx
         .update(bannerGenerations)
         .set({ status: "failed", errorCategory: "abandoned", errorMessage: "Request did not finish", completedAt: now })

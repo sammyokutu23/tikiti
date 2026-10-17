@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Monitor, Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { THEME_COOKIE, type Theme } from "@/lib/theme";
+import { LEGACY_THEME_COOKIE, THEME_COOKIE, type Theme } from "@/lib/theme";
 
 const OPTIONS: { value: Theme; label: string; Icon: typeof Sun }[] = [
   { value: "system", label: "System", Icon: Monitor },
@@ -17,6 +17,7 @@ function applyTheme(theme: Theme) {
   if (theme === "system") root.removeAttribute("data-theme");
   else root.setAttribute("data-theme", theme);
   document.cookie = `${THEME_COOKIE}=${theme}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  document.cookie = `${LEGACY_THEME_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
 export function ThemeToggle({ initial }: { initial: Theme }) {

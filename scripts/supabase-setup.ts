@@ -47,18 +47,18 @@ async function setupCron(siteUrl: string) {
   try {
     await pool.query("create extension if not exists pg_cron");
     await pool.query("create extension if not exists pg_net");
-    const existing = await pool.query("select id from vault.secrets where name = 'tikiti_cron_secret'");
+    const existing = await pool.query("select id from vault.secrets where name = 'tikosoko_cron_secret'");
     if (existing.rows[0]) await pool.query("select vault.update_secret($1, $2)", [existing.rows[0].id, secret]);
-    else await pool.query("select vault.create_secret($1, 'tikiti_cron_secret', 'Bearer token for /api/cron/tick')", [secret]);
+    else await pool.query("select vault.create_secret($1, 'tikosoko_cron_secret', 'Bearer token for /api/cron/tick')", [secret]);
     const endpoint = `${siteUrl.replace(/\/+$/, "")}/api/cron/tick`;
     const command = `select net.http_post(
       url := ${pgLiteral(endpoint)},
-      headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'tikiti_cron_secret')),
+      headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'tikosoko_cron_secret')),
       body := '{}'::jsonb,
       timeout_milliseconds := 60000
     )`;
-    await pool.query("select cron.schedule('tikiti-tick', '* * * * *', $1)", [command]);
-    console.log(`Cron: "tikiti-tick" runs every minute → ${endpoint}`);
+    await pool.query("select cron.schedule('tikosoko-tick', '* * * * *', $1)", [command]);
+    console.log(`Cron: "tikosoko-tick" runs every minute → ${endpoint}`);
   } finally {
     await pool.end();
   }
@@ -71,7 +71,7 @@ function pgLiteral(s: string) {
 
 async function main() {
   const site = process.argv[2] ?? process.env.APP_BASE_URL;
-  if (!site || !site.startsWith("https://")) throw new Error("Pass your site's https URL, e.g. npx tsx scripts/supabase-setup.ts https://tikiti.vercel.app");
+  if (!site || !site.startsWith("https://")) throw new Error("Pass your site's https URL, e.g. npx tsx scripts/supabase-setup.ts https://tikosoko.vercel.app");
   await setupStorage();
   await setupCron(site);
 }

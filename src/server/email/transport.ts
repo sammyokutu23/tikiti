@@ -86,7 +86,7 @@ function resend(): EmailTransport {
     async send(msg) {
       const { id } = await sendWithResend(cfg, {
         ...msg,
-        idempotencyKey: msg.idempotencyKey ?? `tikiti-adhoc-${randomToken(12)}`,
+        idempotencyKey: msg.idempotencyKey ?? `tikosoko-adhoc-${randomToken(12)}`,
       });
       return { status: "accepted", messageId: id, transport: "resend" };
     },

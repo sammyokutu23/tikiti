@@ -77,7 +77,7 @@ const SUBJECT_PLACEHOLDER: Record<EmailKind, string> = {
   account_email: "Account email",
 };
 
-export const emailIdempotencyKey = (deliveryId: string) => `tikiti-email-${deliveryId}`;
+export const emailIdempotencyKey = (deliveryId: string) => `tikosoko-email-${deliveryId}`;
 
 /**
  * Records an email delivery and queues the send job in the caller's transaction,

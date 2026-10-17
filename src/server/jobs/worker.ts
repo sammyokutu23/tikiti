@@ -35,10 +35,10 @@ export async function workerTick() {
 }
 
 export function startInlineWorker(intervalMs = 4000) {
-  const g = globalThis as unknown as { __tikitiWorker?: NodeJS.Timeout; __tikitiWorkerTick?: () => Promise<void> };
+  const g = globalThis as unknown as { __tikosokoWorker?: NodeJS.Timeout; __tikosokoWorkerTick?: () => Promise<void> };
   // The timer calls through globalThis so a dev hot reload swaps in the new code instead of running stale modules.
-  g.__tikitiWorkerTick = workerTick;
-  if (g.__tikitiWorker) return;
-  g.__tikitiWorker = setInterval(() => g.__tikitiWorkerTick?.(), intervalMs);
+  g.__tikosokoWorkerTick = workerTick;
+  if (g.__tikosokoWorker) return;
+  g.__tikosokoWorker = setInterval(() => g.__tikosokoWorkerTick?.(), intervalMs);
   console.log(`[worker] inline outbox worker started (every ${intervalMs}ms)`);
 }

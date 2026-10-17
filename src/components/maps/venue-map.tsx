@@ -51,7 +51,7 @@ export function VenueMap({ lat, lng, label, className }: { lat: number; lng: num
   }, [lat, lng, label]);
 
   return (
-    <div className={cn("tikiti-map relative isolate overflow-hidden rounded-3xl border border-line bg-surface", className)}>
+    <div className={cn("tikosoko-map relative isolate overflow-hidden rounded-3xl border border-line bg-surface", className)}>
       <div ref={ref} className="absolute inset-0" role="region" aria-label={`Map: ${label}`} />
       {state !== "ready" && state !== "error" && <div className="skeleton absolute inset-0" aria-hidden />}
       {state === "error" && (

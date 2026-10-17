@@ -75,7 +75,7 @@ Plus `sent` (SMTP) and `captured` (dev mailbox).
   payment callbacks therefore produce one email.
 - **Claimed once:** the job claims the delivery with a conditional update. A delivery that already
   reached Resend is never sent again by the job.
-- **Retries are deduplicated by Resend:** every request carries `Idempotency-Key: tikiti-email-<deliveryId>`.
+- **Retries are deduplicated by Resend:** every request carries `Idempotency-Key: tikosoko-email-<deliveryId>`.
   The rendered payload is deterministic (fixed PDF dates, link token anchored to the delivery), so a
   retry after a timeout or a lost response comes back from Resend as the same email, not a second one.
 - **Uncertain results:** Resend honours the key for 24 hours. A timeout or 5xx is retried inside that

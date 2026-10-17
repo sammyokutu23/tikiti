@@ -56,7 +56,7 @@ for (let attempt = 1; ; attempt++) {
 }
 const firstResult = results.getByRole("option").first();
 await firstResult.getByRole("button").click();
-await org.locator(".tikiti-pin").waitFor();
+await org.locator(".tikosoko-pin").waitFor();
 const filledName = await org.getByLabel("Venue name").inputValue();
 assert.ok(filledName.length > 1);
 assert.equal(await org.getByLabel("City / town").inputValue(), "Nairobi");
@@ -73,9 +73,9 @@ assert.equal(await org.getByLabel("Category").inputValue(), "nightlife"); // for
 step("unconfirmed pin → asked to confirm; other fields kept");
 
 // Drag the marker to refine the entrance.
-await org.locator(".tikiti-pin").evaluate((el) => el.scrollIntoView({ block: "center" }));
+await org.locator(".tikosoko-pin").evaluate((el) => el.scrollIntoView({ block: "center" }));
 await org.waitForTimeout(200);
-const pinBox = await org.locator(".tikiti-pin").boundingBox();
+const pinBox = await org.locator(".tikosoko-pin").boundingBox();
 await org.mouse.move(pinBox.x + pinBox.width / 2, pinBox.y + pinBox.height - 4);
 await org.mouse.down();
 await org.mouse.move(pinBox.x + pinBox.width / 2 + 60, pinBox.y + pinBox.height + 30, { steps: 10 });

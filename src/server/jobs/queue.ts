@@ -48,7 +48,7 @@ export async function enqueueJob(
 
 type Handler = (payload: Record<string, unknown>, job: { id: string; attempts: number; maxAttempts: number }) => Promise<void>;
 // Kept on globalThis so a dev hot reload of this module can't leave the worker with an empty registry.
-const handlers: Map<string, Handler> = ((globalThis as unknown as { __tikitiJobHandlers?: Map<string, Handler> }).__tikitiJobHandlers ??= new Map());
+const handlers: Map<string, Handler> = ((globalThis as unknown as { __tikosokoJobHandlers?: Map<string, Handler> }).__tikosokoJobHandlers ??= new Map());
 
 export function registerJobHandler(type: JobType, handler: Handler) {
   handlers.set(type, handler);

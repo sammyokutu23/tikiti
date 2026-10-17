@@ -214,7 +214,7 @@ export function LocationPicker({
         </button>
       )}
 
-      <div className="tikiti-map relative isolate aspect-[4/3] overflow-hidden rounded-3xl border border-line bg-surface sm:aspect-[16/9]">
+      <div className="tikosoko-map relative isolate aspect-[4/3] overflow-hidden rounded-3xl border border-line bg-surface sm:aspect-[16/9]">
         <div ref={mapEl} className="absolute inset-0" aria-label="Venue location map. Click to place the pin, or pan with arrow keys and use “Set pin at map centre”." />
         {mapState === "loading" && <div className="skeleton absolute inset-0 z-[500]" aria-hidden />}
         {mapState === "ready" && (

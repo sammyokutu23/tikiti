@@ -15,7 +15,7 @@ export function loadLeaflet(): Promise<typeof Leaflet> {
 /** Self-contained SVG pin (avoids Leaflet's default image paths, which break under bundlers). */
 export function pinIcon(L: typeof Leaflet) {
   return L.divIcon({
-    className: "tikiti-pin",
+    className: "tikosoko-pin",
     html: `<svg viewBox="0 0 32 44" width="32" height="44" aria-hidden="true"><path d="M16 0C7.2 0 0 7 0 15.7 0 27.5 16 44 16 44s16-16.5 16-28.3C32 7 24.8 0 16 0Z" fill="#0a0a0b" stroke="#fff" stroke-width="2"/><circle cx="16" cy="15.5" r="6" fill="#fff"/></svg>`,
     iconSize: [32, 44],
     iconAnchor: [16, 44],

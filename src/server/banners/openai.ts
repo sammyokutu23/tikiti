@@ -95,7 +95,7 @@ export function setImageGeneratorOverride(fn: ImageGenerator | null) {
   generatorOverride = fn;
 }
 
-export const endUserId = (organizerId: string) => `tikiti-org-${createHash("sha256").update(organizerId).digest("hex").slice(0, 24)}`;
+export const endUserId = (organizerId: string) => `tikosoko-org-${createHash("sha256").update(organizerId).digest("hex").slice(0, 24)}`;
 
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 

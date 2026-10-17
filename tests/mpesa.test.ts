@@ -62,7 +62,7 @@ const ENV = {
   DARAJA_SHORTCODE: "174379",
   DARAJA_PASSKEY: "test-passkey",
   DARAJA_TRANSACTION_TYPE: "CustomerPayBillOnline",
-  DARAJA_CALLBACK_URL: "https://tikiti.example/api/payments/stk/callback",
+  DARAJA_CALLBACK_URL: "https://tikosoko.example/api/payments/stk/callback",
   DARAJA_CALLBACK_TOKEN: TOKEN,
   DARAJA_VERIFY_CALLBACKS: "true",
   DARAJA_TIMEOUT_MS: "2000",
@@ -199,7 +199,7 @@ describe("Daraja adapter basics", () => {
   it("refuses production without the explicit live switch, and never with the sandbox shortcode", () => {
     expect(() => darajaConfig({ ...process.env, DARAJA_ENV: "production" })).toThrow(/DARAJA_LIVE_PAYMENTS_ENABLED/);
     expect(() => darajaConfig({ ...process.env, DARAJA_ENV: "production", DARAJA_LIVE_PAYMENTS_ENABLED: "true" })).toThrow(/sandbox test shortcode/);
-    expect(() => darajaConfig({ ...process.env, DARAJA_CALLBACK_URL: "http://tikiti.example/api/payments/stk/callback" })).toThrow(/HTTPS/);
+    expect(() => darajaConfig({ ...process.env, DARAJA_CALLBACK_URL: "http://tikosoko.example/api/payments/stk/callback" })).toThrow(/HTTPS/);
     expect(darajaConfig().baseUrl).toBe("https://sandbox.safaricom.co.ke");
   });
 
@@ -230,7 +230,7 @@ describe("M-Pesa STK Push initiation", () => {
       PartyA: "254712345678",
       PartyB: "174379",
       PhoneNumber: "254712345678",
-      CallBackURL: `https://tikiti.example/api/payments/stk/callback/${TOKEN}`,
+      CallBackURL: `https://tikosoko.example/api/payments/stk/callback/${TOKEN}`,
     });
     expect(req.body!.Timestamp).toMatch(/^\d{14}$/);
     expect(req.body!.Password).toBe(stkPassword("174379", "test-passkey", String(req.body!.Timestamp)));

@@ -77,7 +77,7 @@ async function fakeFetch(input: RequestInfo | URL, init?: RequestInit): Promise<
     return json(200, { id });
   }
   if (path.startsWith("/emails/") && (!init?.method || init.method === "GET")) return json(200, { id: path.split("/")[2], last_event: fake.lastEvent });
-  if (path === "/domains") return json(200, { data: [{ id: "d1", name: "tikiti.example", status: "verified" }] });
+  if (path === "/domains") return json(200, { data: [{ id: "d1", name: "tikosoko.example", status: "verified" }] });
   return json(404, { statusCode: 404, name: "not_found", message: "Not found" });
 }
 
@@ -85,9 +85,9 @@ const WEBHOOK_SECRET = `whsec_${randomBytes(24).toString("base64")}`;
 const ENV = {
   EMAIL_TRANSPORT: "resend",
   RESEND_API_KEY: "re_test_0123456789abcdef",
-  RESEND_FROM_EMAIL: "tickets@tikiti.example",
-  RESEND_FROM_NAME: "Tikiti Tickets",
-  RESEND_REPLY_TO: "help@tikiti.example",
+  RESEND_FROM_EMAIL: "tickets@tikosoko.example",
+  RESEND_FROM_NAME: "TikoSoko Tickets",
+  RESEND_REPLY_TO: "help@tikosoko.example",
   RESEND_WEBHOOK_SECRET: WEBHOOK_SECRET,
   RESEND_TIMEOUT_MS: "3000",
 };
@@ -170,7 +170,7 @@ describe("Resend configuration", () => {
     const cfg = (e: Record<string, string>) => resendConfig(e as NodeJS.ProcessEnv);
     expect(() => cfg({})).toThrow(/RESEND_API_KEY, RESEND_FROM_EMAIL/);
     expect(() => cfg({ RESEND_API_KEY: "sk_live_x", RESEND_FROM_EMAIL: "a@b.co" })).toThrow(/doesn't look like a Resend key/);
-    expect(() => cfg({ RESEND_API_KEY: "re_abcdefghij", RESEND_FROM_EMAIL: "Tikiti <a@b.co>" })).toThrow(/plain address/);
+    expect(() => cfg({ RESEND_API_KEY: "re_abcdefghij", RESEND_FROM_EMAIL: "TikoSoko <a@b.co>" })).toThrow(/plain address/);
     expect(() => cfg({ RESEND_API_KEY: "re_abcdefghij", RESEND_FROM_EMAIL: "a@b.co", RESEND_WEBHOOK_SECRET: "nope" })).toThrow(/whsec_/);
     expect(() => cfg({ RESEND_API_KEY: "re_abcdefghij", RESEND_FROM_EMAIL: "a@b.co", NODE_ENV: "production", APP_BASE_URL: "http://x.co" })).toThrow(/https/);
     try {
@@ -204,8 +204,8 @@ describe("ticket confirmation email", () => {
     const mails = toBuyer();
     expect(mails).toHaveLength(1);
     const m = mails[0];
-    expect(m.from).toBe('"Tikiti Tickets" <tickets@tikiti.example>');
-    expect(m.reply_to).toBe("help@tikiti.example");
+    expect(m.from).toBe('"TikoSoko Tickets" <tickets@tikosoko.example>');
+    expect(m.reply_to).toBe("help@tikosoko.example");
     expect(m.subject).toBe(`Your tickets for Test Event — ${booking.reference}`);
     expect(m.html).toContain(booking.reference);
     expect(m.html).toContain("Test Venue");
@@ -224,7 +224,7 @@ describe("ticket confirmation email", () => {
 
     const d = await confirmationDelivery(booking.id);
     expect(d).toMatchObject({ status: "accepted", transport: "resend", providerMessageId: m.id, attachmentCount: 1, attempts: 1 });
-    expect(ticketRequests(booking.reference)[0].key).toBe(`tikiti-email-${d.id}`);
+    expect(ticketRequests(booking.reference)[0].key).toBe(`tikosoko-email-${d.id}`);
     // Nothing sensitive stored: no body, no attachment.
     expect(JSON.stringify(d)).not.toContain("%PDF");
   });
@@ -349,7 +349,7 @@ describe("delivery failures and retries", () => {
     d = await confirmationDelivery(booking.id);
     expect(d.status).toBe("accepted");
     const keys = ticketRequests(booking.reference).map((r) => r.key);
-    expect(keys).toEqual([`tikiti-email-${d.id}`, `tikiti-email-${d.id}`]);
+    expect(keys).toEqual([`tikosoko-email-${d.id}`, `tikosoko-email-${d.id}`]);
   }, 20_000);
 
   it("10. accepted-but-reply-lost is retried safely: Resend's idempotency returns the same email, no duplicate", async () => {

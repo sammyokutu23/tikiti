@@ -58,7 +58,7 @@ await org.getByLabel("Ends").fill("2026-12-05T23:00");
 await org.getByLabel("Venue name").fill("Nyali Beach Hotel Gardens");
 await org.getByLabel("City / town").fill("Mombasa");
 // Drop the pin manually (no geocoder call) and confirm it.
-await org.locator(".tikiti-map .leaflet-tile-loaded").first().waitFor({ timeout: 20000 });
+await org.locator(".tikosoko-map .leaflet-tile-loaded").first().waitFor({ timeout: 20000 });
 await org.getByRole("button", { name: "Set pin at map centre" }).click();
 await org.getByRole("button", { name: "Confirm pin" }).click();
 await org.getByRole("button", { name: "Create draft" }).click();

@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { BottomNav } from "@/components/site/bottom-nav";
 import { SiteHeader } from "@/components/site/header";
-import { THEME_COOKIE, parseTheme } from "@/lib/theme";
+import { LEGACY_THEME_COOKIE, THEME_COOKIE, parseTheme } from "@/lib/theme";
 import { getCurrentUser, getOrganizerProfile } from "@/server/auth/session";
 import "./globals.css";
 
@@ -30,7 +30,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const user = await getCurrentUser();
   const organizer = user ? await getOrganizerProfile(user.id) : null;
   // Saved choice is rendered on the server, so there's no flash of the wrong theme.
-  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
+  const jar = await cookies();
+  const theme = parseTheme((jar.get(THEME_COOKIE) ?? jar.get(LEGACY_THEME_COOKIE))?.value);
   return (
     <html
       lang="en-KE"
