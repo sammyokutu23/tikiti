@@ -23,7 +23,6 @@ export function SiteFooter() {
         <div className="space-y-2 text-sm">
           <p className="font-semibold">Organize</p>
           <Link href="/organizer/apply" className="block text-muted hover:text-fg">Sell tickets on TikoSoko</Link>
-          <Link href="/organizer" className="block text-muted hover:text-fg">Organizer dashboard</Link>
         </div>
       </div>
     </footer>

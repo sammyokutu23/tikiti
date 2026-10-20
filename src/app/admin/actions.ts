@@ -21,7 +21,7 @@ import { MAX_COMMISSION_BPS, setCommissionBps, getCommissionBps } from "@/server
 import { bannerLimitsSchema, setBannerLimits } from "@/server/banners/service";
 import { planPolicySchema, setPlanPolicy } from "@/server/plans/policy";
 import { adminCancelPlan, adminResolveLatePayment } from "@/server/plans/service";
-import { approveExternalListing, approveExternalSchema, cancelListing, rejectExternalListing } from "@/server/resale/listings";
+import { approveExternalListing, approveExternalSchema, cancelListing, correctedDetailsSchema, correctExternalListingDetails, rejectExternalListing } from "@/server/resale/listings";
 import { markPayoutPaid, refundDisputedResale, releaseDisputedPayout } from "@/server/resale/payouts";
 
 const back = (fd: FormData, fallback: string) => {
@@ -325,7 +325,18 @@ export async function approveResaleAction(fd: FormData) {
     });
     if (!parsed.success) throw new UserError(parsed.error.issues[0]?.message ?? "Check the event details.");
     await approveExternalListing(String(fd.get("listingId")), parsed.data, admin.id);
-    return "Listing approved and live on the marketplace.";
+    return "Ticket listed and live on the marketplace.";
+  });
+}
+
+export async function replaceResaleDetailsAction(fd: FormData) {
+  const admin = await requireAdmin();
+  await run(fd, "/admin/resale", async () => {
+    const values = Object.fromEntries(["eventName", "venue", "city", "startsAtLocal", "ticketTypeName", "platform", "orderRef", "note"].map((k) => [k, String(fd.get(k) ?? "")]));
+    const parsed = correctedDetailsSchema.safeParse(values);
+    if (!parsed.success) throw new UserError(parsed.error.issues[0]?.message ?? "Check the ticket details.");
+    await correctExternalListingDetails(String(fd.get("listingId")), parsed.data, admin.id);
+    return "Old details withdrawn and the new details saved. You can now list or reject the ticket.";
   });
 }
 

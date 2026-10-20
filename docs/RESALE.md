@@ -36,6 +36,15 @@ M-Pesa (STK + reconciliation), the status page, refunds and emails unchanged:
 
 ## Outside tickets
 
+- **Seller flow** (`/resale/sell/outside`): upload ticket + proof → **Scan ticket details** (optional; an
+  OpenAI vision model reads the file and fills the form, see `src/server/resale/scan.ts`, needs
+  `OPENAI_API_KEY` + `OPENAI_SCAN_MODEL`; the button is hidden without them) → check details → set
+  price → submit for review. Sellers can **withdraw from listings** at `/resale/mine` while pending or live.
+- **Admin flow** (`/admin/resale → Uploaded tickets`): each ticket has tabs *Uploaded ticket*,
+  *Withdraw old details*, *Enter new details* and *List or reject*. Saving new details replaces the
+  event/venue/date/type/platform/order/note (price and payout stay the seller's); the withdrawn
+  version is kept in the audit log (`resale.details_replaced`) and shown on the card.
+
 - Files are validated by their bytes (PDF/JPG/PNG/WebP, max 2 MB each) and stored in
   `resale_documents` (Postgres), **not** the public image bucket. `/api/resale/documents/[id]`
   serves them to admins, the seller, and (ticket file only) the buyer of a confirmed purchase.

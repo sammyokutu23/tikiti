@@ -79,7 +79,7 @@ export default async function MyListingsPage({ searchParams }: PageProps<"/resal
                       {listing.status === "active" && <ButtonLink href={`/resale/${listing.reference}`} variant="secondary" size="sm">View listing</ButtonLink>}
                       <form action={cancelListingAction}>
                         <input type="hidden" name="listingId" value={listing.id} />
-                        <SubmitButton variant="ghost" size="sm">Withdraw</SubmitButton>
+                        <SubmitButton variant="ghost" size="sm">Withdraw from listings</SubmitButton>
                       </form>
                     </div>
                   )}

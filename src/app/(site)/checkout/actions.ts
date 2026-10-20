@@ -16,6 +16,8 @@ import { cancelPendingBooking, lockBooking } from "@/server/bookings/lifecycle";
 import { startPayment } from "@/server/payments/service";
 
 export async function createCheckoutAction(_: FormState, fd: FormData): Promise<FormState> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Please sign in to buy tickets." };
   const values = formValues(fd, ["buyerName", "buyerEmail", "buyerPhone"]);
   let items: { ticketTypeId: string; quantity: number }[] = [];
   try {
@@ -39,11 +41,10 @@ export async function createCheckoutAction(_: FormState, fd: FormData): Promise<
     return { error: "Too many checkout attempts. Please wait a few minutes.", values };
   }
 
-  const user = await getCurrentUser();
   let ref: string;
   let free: boolean;
   try {
-    const booking = await createCheckout(parsed.data, user?.id ?? null);
+    const booking = await createCheckout(parsed.data, user.id);
     const [ev] = await db.select({ endsAt: events.endsAt }).from(events).where(eq(events.id, booking.eventId));
     await rememberBookingAccess(booking, ev.endsAt);
     ref = booking.reference;

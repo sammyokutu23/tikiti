@@ -1,12 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, Flame, MapPin, Repeat, Ticket } from "lucide-react";
+import { ArrowRight, ChevronDown, Flame, MapPin, Ticket } from "lucide-react";
 import { CategoryChips } from "@/components/events/category-chips";
 import { CATEGORY_STYLE, CHIP_TONE } from "@/components/events/category-style";
 import { EventCard, EventRow, FeaturedEventCard } from "@/components/events/event-card";
 import { SearchPill } from "@/components/events/search-bar";
 import { Spark, Underline } from "@/components/site/doodles";
-import { ButtonLink, EmptyState, Section } from "@/components/ui";
+import { HomeStory } from "@/components/site/story";
+import { EmptyState, Section } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { CATEGORIES, searchPublicEvents } from "@/server/events/queries";
 
@@ -106,6 +107,8 @@ export default async function HomePage() {
           )}
         </Section>
 
+        <HomeStory />
+
         {thisWeek.length > 0 && (
           <Section title="Happening this week" action={<Link href="/events?when=week" className="text-sm font-semibold text-teal hover:text-teal/80">See all</Link>}>
             <div className="grid gap-3 md:grid-cols-2">
@@ -152,38 +155,6 @@ export default async function HomePage() {
             </div>
           )}
         </Section>
-
-        <section className="flex flex-col gap-5 rounded-[2rem] bg-[#14181b] p-6 text-white sm:flex-row sm:items-center sm:justify-between sm:p-8">
-          <div className="max-w-xl space-y-2">
-            <p className="font-script text-2xl font-bold text-[#f7b731]">Plans changed?</p>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Buy and sell tickets with other fans</h2>
-            <p className="text-sm text-white/75">
-              Resell your TikoSoko ticket, or one you bought elsewhere. Buyers get a fresh ticket or a reviewed one, and sellers are paid after the event.
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
-            <ButtonLink href="/resale" size="lg">
-              <Repeat className="size-4" aria-hidden /> Resale tickets
-            </ButtonLink>
-            <ButtonLink href="/resale/sell" size="lg" variant="outline" className="border-white/25 text-white hover:bg-white/10">
-              Sell yours
-            </ButtonLink>
-          </div>
-        </section>
-
-        <section className="relative overflow-hidden rounded-[2rem] border border-line bg-[radial-gradient(600px_300px_at_100%_0%,rgb(15_127_114/0.14),transparent_70%)] bg-surface p-6 sm:p-10">
-          <div className="max-w-xl space-y-4">
-            <p className="text-sm font-medium text-muted">For organizers</p>
-            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">Sell tickets with QR check-in and same-day reporting.</h2>
-            <p className="text-sm text-muted">
-              Create your event in minutes, sell M-Pesa and card tickets, and scan guests in from any phone. A simple {""}
-              commission on paid tickets — free events are free.
-            </p>
-            <ButtonLink href="/organizer/apply" size="lg">
-              Start selling <ArrowRight className="size-4" aria-hidden />
-            </ButtonLink>
-          </div>
-        </section>
       </div>
     </>
   );

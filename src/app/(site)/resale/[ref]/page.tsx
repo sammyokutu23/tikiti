@@ -84,13 +84,19 @@ export default async function ResaleListingPage({ params }: PageProps<"/resale/[
                 <p className="text-muted">This is your listing.</p>
                 <ButtonLink href="/resale/mine" variant="secondary" full>Manage my listings</ButtonLink>
               </div>
+            ) : !user ? (
+              <div className="space-y-3 text-sm">
+                <p className="text-muted">Sign in or create a free account to buy this ticket. Your ticket is saved to My tickets.</p>
+                <ButtonLink href={`/sign-in?redirect_url=${encodeURIComponent(`/resale/${listing.reference}`)}`} full size="lg">Sign in to buy · {formatMoney(listing.priceMinor + fee)}</ButtonLink>
+                <ButtonLink href={`/sign-up?redirect_url=${encodeURIComponent(`/resale/${listing.reference}`)}`} variant="ghost" full>Create an account</ButtonLink>
+              </div>
             ) : (
               <ResaleBuyForm
                 listingId={listing.id}
                 idempotencyKey={`rck_${randomToken(18)}`}
                 totalMinor={listing.priceMinor + fee}
                 external={external}
-                defaults={{ name: user?.name, email: user?.email, phone: user?.phone ? formatPhone(user.phone) : undefined }}
+                defaults={{ name: user.name, email: user.email, phone: user.phone ? formatPhone(user.phone) : undefined }}
               />
             )}
           </Card>

@@ -5,7 +5,7 @@ import { OrderSummary } from "@/components/events/order-summary";
 import { Alert, ButtonLink, IconLink } from "@/components/ui";
 import { randomToken } from "@/lib/crypto";
 import { formatPhone } from "@/lib/utils";
-import { getCurrentUser } from "@/server/auth/session";
+import { requireUser } from "@/server/auth/guards";
 import { MAX_TICKETS_PER_BOOKING } from "@/server/bookings/checkout";
 import { getPublicEvent } from "@/server/events/queries";
 
@@ -14,6 +14,8 @@ export const metadata = { title: "Checkout" };
 export default async function CheckoutPage({ params, searchParams }: PageProps<"/events/[slug]/checkout">) {
   const { slug } = await params;
   const { t } = await searchParams;
+  // Buying requires an account so every ticket lands in "My tickets".
+  const user = await requireUser(`/events/${slug}/checkout?t=${encodeURIComponent(String(t ?? ""))}`);
   const detail = await getPublicEvent(slug);
   if (!detail) notFound();
   const { event } = detail;
@@ -40,7 +42,6 @@ export default async function CheckoutPage({ params, searchParams }: PageProps<"
   if (lines.length === 0) problems.push("You haven't selected any tickets.");
 
   const subtotal = lines.reduce((s, l) => s + l.tt.priceMinor * l.quantity, 0);
-  const user = await getCurrentUser();
 
   return (
     <div className="mx-auto max-w-5xl px-4 pb-16 pt-5 sm:px-6 sm:pt-10">
@@ -62,16 +63,11 @@ export default async function CheckoutPage({ params, searchParams }: PageProps<"
       ) : (
         <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
           <div className="order-2 lg:order-1">
-            {!user && (
-              <p className="mb-4 text-sm text-muted">
-                Checking out as a guest. <a href={`/sign-in?redirect_url=${encodeURIComponent(`/events/${slug}/checkout?t=${t}`)}`} className="text-fg underline-offset-4 hover:underline">Log in</a> to save tickets to your account.
-              </p>
-            )}
             <BuyerForm
               eventId={event.id}
               items={lines.map((l) => ({ ticketTypeId: l.tt.id, quantity: l.quantity }))}
               idempotencyKey={`co_${randomToken(18)}`}
-              defaults={{ name: user?.name, email: user?.email, phone: user?.phone ? formatPhone(user.phone) : undefined }}
+              defaults={{ name: user.name, email: user.email, phone: user.phone ? formatPhone(user.phone) : undefined }}
               totalMinor={subtotal}
               refundPolicy={event.refundPolicy}
             />

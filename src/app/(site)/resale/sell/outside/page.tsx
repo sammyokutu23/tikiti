@@ -3,6 +3,7 @@ import { Alert, Card, IconLink } from "@/components/ui";
 import { formatPhone } from "@/lib/utils";
 import { requireUser } from "@/server/auth/guards";
 import { PAYOUT_HOLD_HOURS } from "@/server/resale/policy";
+import { scanConfig } from "@/server/resale/scan";
 import { ExternalListingForm } from "../../forms";
 
 export const metadata = { title: "Sell an outside ticket" };
@@ -20,14 +21,14 @@ export default async function SellOutsideTicketPage() {
       </div>
       <Alert tone="info" title="How it works">
         <ol className="list-inside list-decimal space-y-1">
-          <li>Upload the ticket and your proof of purchase. Our team checks them, usually within a day.</li>
+          <li>Upload the ticket and your proof of purchase{scanConfig() ? ", then scan the ticket to fill in its details" : ""}. Set your price and submit it for review. Our team checks it, usually within a day.</li>
           <li>Once approved, your ticket appears on the resale marketplace.</li>
           <li>When it sells, the buyer downloads your ticket file. Don&apos;t use or share it again.</li>
           <li>We pay you on M-Pesa {PAYOUT_HOLD_HOURS.external} hours after the event, as long as the buyer didn&apos;t report a problem.</li>
         </ol>
       </Alert>
       <Card className="p-5 sm:p-6">
-        <ExternalListingForm defaultPhone={user.phone ? formatPhone(user.phone) : ""} />
+        <ExternalListingForm defaultPhone={user.phone ? formatPhone(user.phone) : ""} canScan={scanConfig() !== null} />
       </Card>
     </div>
   );

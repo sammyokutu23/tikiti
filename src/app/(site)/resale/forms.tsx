@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { Lock, ShieldCheck } from "lucide-react";
-import { Alert, Field, Input, Textarea } from "@/components/ui";
+import { useActionState, useRef, useState } from "react";
+import { Lock, ScanText, ShieldCheck } from "lucide-react";
+import { Alert, Button, Field, Input, Textarea } from "@/components/ui";
 import { SubmitButton } from "@/components/ui/submit-button";
 import type { FormState } from "@/lib/forms";
 import { formatMoney } from "@/lib/money";
-import { createExternalListingAction, createPlatformListingAction, createResaleCheckoutAction } from "./actions";
+import { createExternalListingAction, createPlatformListingAction, createResaleCheckoutAction, scanTicketAction } from "./actions";
 
 /** Mirrors server/resale/policy.ts so sellers see what buyers will pay. */
 const feeKes = (priceKes: number) => Math.ceil(priceKes * 0.1);
@@ -44,15 +44,71 @@ export function PlatformListingForm({ ticketId, defaultPhone, faceValueMinor }: 
   );
 }
 
-export function ExternalListingForm({ defaultPhone }: { defaultPhone: string }) {
+const SCAN_FIELDS = ["eventName", "venue", "city", "startsAtLocal", "ticketTypeName", "platform", "orderRef"] as const;
+
+/** Reads the chosen ticket file with AI and fills the empty-or-scanned detail fields for the seller to check. */
+function ScanButton({ formRef }: { formRef: React.RefObject<HTMLFormElement | null> }) {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  async function scan() {
+    const form = formRef.current;
+    const file = (form?.elements.namedItem("ticketFile") as HTMLInputElement | null)?.files?.[0];
+    if (!form || !file) return setMsg({ tone: "danger", text: "Choose your ticket file first." });
+    setBusy(true);
+    setMsg(null);
+    const fd = new FormData();
+    fd.set("ticketFile", file);
+    try {
+      const res = await scanTicketAction(fd);
+      if (res.error || !res.fields) return setMsg({ tone: "danger", text: res.error ?? "We couldn't read your ticket." });
+      let filled = 0;
+      for (const name of SCAN_FIELDS) {
+        const value = res.fields[name];
+        const input = form.elements.namedItem(name) as HTMLInputElement | null;
+        if (value && input) {
+          input.value = value;
+          filled++;
+        }
+      }
+      setMsg({ tone: "success", text: `Filled in ${filled} detail${filled === 1 ? "" : "s"} from your ticket. Please check them before submitting.` });
+    } catch {
+      setMsg({ tone: "danger", text: "We couldn't read your ticket right now. Please fill in the details yourself." });
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="space-y-2 sm:col-span-2">
+      <Button type="button" variant="secondary" onClick={scan} disabled={busy}>
+        <ScanText className="size-4" aria-hidden /> {busy ? "Reading your ticket…" : "Scan ticket details"}
+      </Button>
+      {msg && <Alert tone={msg.tone}>{msg.text}</Alert>}
+    </div>
+  );
+}
+
+export function ExternalListingForm({ defaultPhone, canScan }: { defaultPhone: string; canScan: boolean }) {
   const [state, action, pending] = useActionState(createExternalListingAction, {} as FormState);
+  const formRef = useRef<HTMLFormElement>(null);
   const fe = state.fieldErrors ?? {};
   const v = state.values ?? {};
   return (
-    <form action={action} className="space-y-6" noValidate>
+    <form ref={formRef} action={action} className="space-y-6" noValidate>
       {state.error && <Alert tone="danger" title="We couldn't submit your ticket">{state.error}</Alert>}
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-3 text-lg font-semibold">The event</legend>
+        <legend className="mb-3 text-lg font-semibold">1. Upload your ticket</legend>
+        <Field label="Ticket file" htmlFor="ticketFile" hint="The ticket the buyer will receive: PDF or image, up to 2 MB." className="sm:col-span-1">
+          <Input id="ticketFile" name="ticketFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required />
+        </Field>
+        <Field label="Proof of purchase" htmlFor="proofFile" hint="Receipt, confirmation email or M-Pesa message. Only our team sees it." className="sm:col-span-1">
+          <Input id="proofFile" name="proofFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required />
+        </Field>
+        {canScan && <ScanButton formRef={formRef} />}
+      </fieldset>
+
+      <fieldset className="grid gap-4 sm:grid-cols-2">
+        <legend className="mb-3 text-lg font-semibold">2. Ticket details</legend>
+        {canScan && <p className="-mt-2 text-sm text-muted sm:col-span-2">Scan your ticket to fill these in, or type them yourself.</p>}
         <Field label="Event name" htmlFor="eventName" error={fe.eventName} className="sm:col-span-2">
           <Input id="eventName" name="eventName" required defaultValue={v.eventName} error={fe.eventName} placeholder="e.g. Blankets & Wine" />
         </Field>
@@ -68,21 +124,11 @@ export function ExternalListingForm({ defaultPhone }: { defaultPhone: string }) 
         <Field label="Ticket type" htmlFor="ticketTypeName" error={fe.ticketTypeName}>
           <Input id="ticketTypeName" name="ticketTypeName" required defaultValue={v.ticketTypeName} error={fe.ticketTypeName} placeholder="Regular, VIP…" />
         </Field>
-      </fieldset>
-
-      <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-3 text-lg font-semibold">Where you bought it</legend>
-        <Field label="Platform" htmlFor="platform" error={fe.platform}>
+        <Field label="Where you bought it" htmlFor="platform" error={fe.platform}>
           <Input id="platform" name="platform" required defaultValue={v.platform} error={fe.platform} placeholder="Mookh, Ticketsasa, the organizer…" />
         </Field>
         <Field label="Order or receipt number" htmlFor="orderRef" error={fe.orderRef} hint="Optional, but it speeds up review.">
           <Input id="orderRef" name="orderRef" defaultValue={v.orderRef} error={fe.orderRef} />
-        </Field>
-        <Field label="Ticket file" htmlFor="ticketFile" hint="The ticket the buyer will receive: PDF or image, up to 2 MB." className="sm:col-span-1">
-          <Input id="ticketFile" name="ticketFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required />
-        </Field>
-        <Field label="Proof of purchase" htmlFor="proofFile" hint="Receipt, confirmation email or M-Pesa message. Only our team sees it." className="sm:col-span-1">
-          <Input id="proofFile" name="proofFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" required />
         </Field>
         <Field label="Anything buyers or our team should know" htmlFor="note" error={fe.note} className="sm:col-span-2">
           <Textarea id="note" name="note" defaultValue={v.note} error={fe.note} placeholder="e.g. Name on the ticket can be changed at the gate" />
@@ -90,7 +136,7 @@ export function ExternalListingForm({ defaultPhone }: { defaultPhone: string }) 
       </fieldset>
 
       <fieldset className="grid gap-4 sm:grid-cols-2">
-        <legend className="mb-3 text-lg font-semibold">Price and payout</legend>
+        <legend className="mb-3 text-lg font-semibold">3. Set your resale price</legend>
         <PriceField error={fe.priceKes} defaultValue={v.priceKes} />
         <Field label="M-Pesa number for payout" htmlFor="payoutPhone" error={fe.payoutPhone}>
           <Input id="payoutPhone" name="payoutPhone" type="tel" inputMode="tel" placeholder="0712 345 678" required defaultValue={v.payoutPhone ?? defaultPhone} error={fe.payoutPhone} />

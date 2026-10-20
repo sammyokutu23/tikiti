@@ -2,10 +2,11 @@
  * Resale listings: TikoSoko tickets (verified, reissued to the buyer on sale) and
  * tickets bought on other platforms (reviewed by an admin before going live).
  */
-import { and, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, type Tx } from "@/db";
 import {
+  auditLogs,
   bookingItems,
   bookings,
   eventCategory,
@@ -285,6 +286,66 @@ export async function approveExternalListing(listingId: string, input: z.infer<t
     await queueSellerReviewEmail(tx, l, { approved: true, eventTitle });
     await audit(tx, { actorUserId: adminId, action: "resale.approved", entityType: "resale_listing", entityId: l.id, metadata: { reference: l.reference, eventId, mode: input.mode } });
   });
+}
+
+/** Details an admin can withdraw and replace while reviewing an outside ticket (price and payout stay the seller's). */
+export const correctedDetailsSchema = externalListingSchema.pick({ eventName: true, venue: true, city: true, startsAtLocal: true, ticketTypeName: true, platform: true, orderRef: true, note: true });
+
+const detailsOf = (l: ResaleListing) => ({
+  eventName: l.externalEventName,
+  venue: l.externalVenue,
+  city: l.externalCity,
+  startsAt: l.externalStartsAt?.toISOString() ?? null,
+  ticketTypeName: l.ticketTypeName,
+  platform: l.externalPlatform,
+  orderRef: l.externalOrderRef,
+  note: l.sellerNote,
+});
+export type ListingDetails = ReturnType<typeof detailsOf>;
+
+/** Withdraws the details on a pending outside listing and saves new ones. The old details are kept in the audit log. */
+export async function correctExternalListingDetails(listingId: string, input: z.infer<typeof correctedDetailsSchema>, adminId: string) {
+  const startsAt = zonedLocalToUtc(input.startsAtLocal);
+  if (!startsAt) throw new UserError("Enter a valid event date and time.");
+  if (startsAt <= new Date()) throw new UserError("The event must be in the future.");
+  return db.transaction(async (tx) => {
+    const [l] = await tx.select().from(resaleListings).where(eq(resaleListings.id, listingId)).for("update");
+    if (!l || l.kind !== "external") throw new UserError("Listing not found.");
+    if (l.status !== "pending_review") throw new UserError("Only listings waiting for review can be changed.");
+    const [updated] = await tx
+      .update(resaleListings)
+      .set({
+        externalEventName: input.eventName,
+        externalVenue: input.venue,
+        externalCity: input.city,
+        externalStartsAt: startsAt,
+        ticketTypeName: input.ticketTypeName,
+        externalPlatform: input.platform,
+        externalOrderRef: input.orderRef || null,
+        sellerNote: input.note,
+        updatedAt: new Date(),
+      })
+      .where(eq(resaleListings.id, l.id))
+      .returning();
+    await audit(tx, {
+      actorUserId: adminId,
+      action: "resale.details_replaced",
+      entityType: "resale_listing",
+      entityId: l.id,
+      metadata: { reference: l.reference, withdrawn: detailsOf(l), entered: detailsOf(updated) },
+    });
+  });
+}
+
+/** Details withdrawn from a listing by admins, newest first. */
+export async function withdrawnDetails(listingId: string) {
+  const rows = await db
+    .select({ at: auditLogs.createdAt, metadata: auditLogs.metadata, adminName: users.name })
+    .from(auditLogs)
+    .leftJoin(users, eq(users.id, auditLogs.actorUserId))
+    .where(and(eq(auditLogs.entityType, "resale_listing"), eq(auditLogs.entityId, listingId), eq(auditLogs.action, "resale.details_replaced")))
+    .orderBy(desc(auditLogs.createdAt));
+  return rows.map((r) => ({ at: r.at, adminName: r.adminName, details: (r.metadata as { withdrawn: ListingDetails }).withdrawn }));
 }
 
 export async function rejectExternalListing(listingId: string, note: string, adminId: string) {

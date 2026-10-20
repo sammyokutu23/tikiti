@@ -1,12 +1,13 @@
 import { and, eq } from "drizzle-orm";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { db } from "@/db";
 import { bookings, events, ledgerEntries, refunds, resaleListings, resalePayouts, tickets, ticketTypes } from "@/db/schema";
 import { randomToken } from "@/lib/crypto";
 import { refundBooking } from "@/server/bookings/refunds";
 import { processDueJobs } from "@/server/jobs/queue";
 import { createResaleCheckout } from "@/server/resale/checkout";
-import { approveExternalListing, cancelListing, closeEndedListings, createExternalListing, createPlatformListing, marketplaceListings, rejectExternalListing } from "@/server/resale/listings";
+import { approveExternalListing, cancelListing, closeEndedListings, correctExternalListingDetails, createExternalListing, createPlatformListing, marketplaceListings, rejectExternalListing, withdrawnDetails } from "@/server/resale/listings";
+import { scanTicket, setTicketReaderOverride } from "@/server/resale/scan";
 import { disputeResale, markPayoutPaid, refundDisputedResale } from "@/server/resale/payouts";
 import { resaleFeeMinor } from "@/server/resale/policy";
 import { reconcileOrganizer, financialSummary } from "@/server/ledger";
@@ -214,6 +215,27 @@ describe("outside ticket resale", () => {
     expect(b.status).toBe("refunded");
   });
 
+  it("lets an admin withdraw the submitted details and enter new ones before listing", async () => {
+    const seller = await makeUser();
+    const admin = await makeUser("admin");
+    const listing = await submit(seller);
+    const startsAtLocal = new Date(Date.now() + 12 * 86_400_000).toISOString().slice(0, 16);
+    const fixed = { eventName: "Blankets & Wine: November", venue: "Ngong Racecourse", city: "Nairobi", startsAtLocal, ticketTypeName: "VIP", platform: "Mookh", orderRef: "MK-124", note: "" };
+    await correctExternalListingDetails(listing.id, fixed, admin.id);
+
+    const [l] = await db.select().from(resaleListings).where(eq(resaleListings.id, listing.id));
+    expect(l.externalEventName).toBe("Blankets & Wine: November");
+    expect(l.ticketTypeName).toBe("VIP");
+    expect(l.priceMinor).toBe(listing.priceMinor); // price and payout stay the seller's
+    const history = await withdrawnDetails(listing.id);
+    expect(history).toHaveLength(1);
+    expect(history[0].details.ticketTypeName).toBe("Early bird");
+    expect(history[0].details.orderRef).toBe("MK-123");
+
+    await rejectExternalListing(listing.id, "Receipt doesn't match the ticket", admin.id);
+    await expect(correctExternalListingDetails(listing.id, fixed, admin.id)).rejects.toThrow(/waiting for review/);
+  });
+
   it("rejection needs a reason and closes the listing", async () => {
     const seller = await makeUser();
     const admin = await makeUser("admin");
@@ -242,5 +264,28 @@ describe("outside ticket resale", () => {
     const [paid] = await db.select().from(resalePayouts).where(eq(resalePayouts.id, p.id));
     expect(paid.status).toBe("paid");
     expect(paid.payoutReference).toBe("SJK3H7QX2P");
+  });
+});
+
+describe("scan ticket details", () => {
+  afterEach(() => setTicketReaderOverride(null));
+  const file = { filename: "ticket.png", contentType: "image/png", data: png };
+  const cfg = { apiKey: "sk-test", model: "test-model" };
+
+  it("returns trimmed fields and drops a malformed date", async () => {
+    setTicketReaderOverride(async () =>
+      JSON.stringify({ eventName: " Sol Fest ", venue: "Uhuru Gardens", city: "Nairobi", startsAtLocal: "next Friday", ticketTypeName: "VIP", platform: "", orderRef: null }),
+    );
+    expect(await scanTicket(file, cfg)).toEqual({ eventName: "Sol Fest", venue: "Uhuru Gardens", city: "Nairobi", startsAtLocal: null, ticketTypeName: "VIP", platform: null, orderRef: null });
+  });
+
+  it("gives the seller a plain message when scanning is off or fails", async () => {
+    await expect(scanTicket(file, null)).rejects.toThrow(/fill in the details yourself/);
+    setTicketReaderOverride(async () => {
+      throw new Error("boom");
+    });
+    await expect(scanTicket(file, cfg)).rejects.toThrow(/fill in the details yourself/);
+    setTicketReaderOverride(async () => JSON.stringify({ eventName: null, venue: null, city: null, startsAtLocal: null, ticketTypeName: null, platform: null, orderRef: null }));
+    await expect(scanTicket(file, cfg)).rejects.toThrow(/couldn't find any ticket details/);
   });
 });

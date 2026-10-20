@@ -39,7 +39,7 @@ npm run user:link-demo -- you@example.com organizer@tikiti.test  # act as a seed
 ```
 
 Seeded demo data belongs to the local users `admin@`, `organizer@`, `organizer2@`, `pending@` and
-`customer@tikiti.test`. Guest checkout and guest booking links still work without an account.
+`customer@tikiti.test`. Buying a ticket (new or resale) requires signing in; older guest bookings stay reachable through their booking links and /bookings/find.
 
 Useful pages: `/dev/mail` (captured emails and PDF attachments), `/admin/operations` (jobs,
 emails, webhooks), `/organizer/events/<id>/scan` (camera check-in; camera needs HTTPS or localhost).
