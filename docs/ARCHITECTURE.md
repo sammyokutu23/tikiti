@@ -19,6 +19,7 @@ src/
     email/                outbox queue, transports (resend/dev-capture/smtp/disabled), templates,
                           Resend webhooks, triggers (notify.ts), admin tools — see docs/EMAIL.md
     jobs/                 transactional outbox + worker
+    resale/               fan resale marketplace: listings, review, checkout, escrow payouts — see docs/RESALE.md
     ledger.ts             commission & organizer ledger
     organizers/           onboarding/verification, reports
     storage.ts            image upload validation + storage driver

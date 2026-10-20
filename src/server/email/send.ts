@@ -23,10 +23,14 @@ import {
   paymentPlans,
   paymentTransactions,
   planInstallments,
+  resaleListings,
+  resalePayouts,
+  users,
   type EmailDelivery,
 } from "@/db/schema";
 import { env } from "@/lib/env";
 import { directionsUrl, eventCoordinates } from "@/lib/location";
+import { formatPhone } from "@/lib/utils";
 import { createBookingAccessToken } from "../bookings/access";
 import { JobError } from "../jobs/queue";
 import { renderBookingPdf } from "../tickets/documents";
@@ -54,6 +58,9 @@ import {
   planPaymentConfirmedEmail,
   planPaymentFailedEmail,
   planPaymentReviewEmail,
+  resaleListingReviewedEmail,
+  resalePurchaseConfirmedEmail,
+  resaleSoldEmail,
   type BookingEmailData,
   type OrganizerEmailData,
   type PlanEmailData,
@@ -150,6 +157,31 @@ async function planContext(bookingId: string, linkIssuedAt: Date) {
   return { ...base, plan, installments, planData: data };
 }
 
+/** Listing + seller data for resale seller emails (loaded at send time). */
+async function resaleSellerContext(listingId: string) {
+  const [row] = await db
+    .select({ l: resaleListings, sellerName: users.name, eventTitle: events.title, timezone: events.timezone })
+    .from(resaleListings)
+    .innerJoin(users, eq(users.id, resaleListings.sellerUserId))
+    .leftJoin(events, eq(events.id, resaleListings.eventId))
+    .where(eq(resaleListings.id, listingId));
+  if (!row) throw new EmailSendError("Resale listing not found", "render", { retryable: false });
+  return {
+    listing: row.l,
+    data: {
+      sellerName: row.sellerName,
+      reference: row.l.reference,
+      eventTitle: row.eventTitle ?? row.l.externalEventName ?? "your event",
+      ticketTypeName: row.l.ticketTypeName,
+      priceMinor: row.l.priceMinor,
+      currency: row.l.currency,
+      timezone: row.timezone ?? "Africa/Nairobi",
+      listingsUrl: `${env.appUrl}/resale/mine`,
+      supportEmail: env.supportEmail,
+    },
+  };
+}
+
 type Rendered = { msg: Omit<OutgoingEmail, "to"> } | { skip: string };
 
 async function render(d: EmailDelivery, secret: string | undefined): Promise<Rendered> {
@@ -204,6 +236,27 @@ async function render(d: EmailDelivery, secret: string | undefined): Promise<Ren
         if (p && p.status !== "reconciliation_required") return { skip: `payment is ${p.status}` };
       }
       return { msg: paymentReviewEmail(data) };
+    }
+    case "resale_purchase_confirmed": {
+      const { booking, data } = await bookingContext(d.bookingId!, d.createdAt);
+      if (booking.status !== "confirmed") return { skip: `booking is ${booking.status}` };
+      const [row] = await db
+        .select({ platform: resaleListings.externalPlatform, releaseAt: resalePayouts.releaseAt })
+        .from(resalePayouts)
+        .innerJoin(resaleListings, eq(resaleListings.id, resalePayouts.listingId))
+        .where(eq(resalePayouts.bookingId, booking.id));
+      if (!row) throw new EmailSendError("Resale payout not found", "render", { retryable: false });
+      return { msg: resalePurchaseConfirmedEmail({ ...data, platform: row.platform, releaseAt: row.releaseAt }) };
+    }
+    case "resale_sold": {
+      const { listing, data } = await resaleSellerContext(String(meta.listingId));
+      const [p] = await db.select().from(resalePayouts).where(eq(resalePayouts.listingId, listing.id));
+      if (!p || p.status === "cancelled") return { skip: "sale was refunded" };
+      return { msg: resaleSoldEmail({ ...data, payoutPhone: formatPhone(p.payoutPhone), releaseAt: p.releaseAt, platform: listing.kind === "platform" }) };
+    }
+    case "resale_listing_reviewed": {
+      const { data } = await resaleSellerContext(String(meta.listingId));
+      return { msg: resaleListingReviewedEmail({ ...data, eventTitle: String(meta.eventTitle || data.eventTitle), approved: meta.approved === true, note: meta.note ? String(meta.note) : undefined }) };
     }
     case "plan_deposit_confirmed":
       return { msg: planDepositConfirmedEmail((await planContext(d.bookingId!, d.createdAt)).planData) };

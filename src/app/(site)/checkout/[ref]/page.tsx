@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { Clock, ShieldAlert } from "lucide-react";
 import { db } from "@/db";
-import { bookingItems, events, paymentTransactions } from "@/db/schema";
+import { bookingItems, events, paymentTransactions, resaleListings } from "@/db/schema";
 import { Countdown, PaymentForm } from "@/app/(site)/checkout/forms";
 import { cancelCheckoutAction } from "@/app/(site)/checkout/actions";
 import { OrderSummary } from "@/components/events/order-summary";
@@ -46,12 +46,20 @@ export default async function PaymentPage({ params, searchParams }: PageProps<"/
   // A plan whose deposit request was already sent is managed from the booking page.
   const existingPlan = await loadPlan(booking.id);
   if (existingPlan && existingPlan.plan.status !== "awaiting_deposit") redirect(`/bookings/${ref}${token ? `?access=${token}` : ""}`);
-  const offer = booking.status === "pending" ? await planOfferForBooking(booking, event) : null;
+  // Payment plans hold new inventory; a resale is a single existing ticket, paid in full.
+  const offer = booking.status === "pending" && !booking.resaleListingId ? await planOfferForBooking(booking, event) : null;
+  const [resale] = booking.resaleListingId
+    ? await db.select({ ticketTypeName: resaleListings.ticketTypeName, reference: resaleListings.reference }).from(resaleListings).where(eq(resaleListings.id, booking.resaleListingId))
+    : [];
+  const lines = resale
+    ? [{ name: `${resale.ticketTypeName} (resale)`, quantity: 1, unitPriceMinor: booking.subtotalMinor }]
+    : items.map((i) => ({ name: i.ticketTypeName, quantity: i.quantity, unitPriceMinor: i.unitPriceMinor }));
 
   const summary = (
     <OrderSummary
       event={event}
-      lines={items.map((i) => ({ name: i.ticketTypeName, quantity: i.quantity, unitPriceMinor: i.unitPriceMinor }))}
+      lines={lines}
+      feeLabel={resale ? "Resale fee (10%)" : undefined}
       subtotalMinor={booking.subtotalMinor}
       feesMinor={booking.feesMinor}
       discountMinor={booking.discountMinor}
@@ -67,7 +75,7 @@ export default async function PaymentPage({ params, searchParams }: PageProps<"/
           The tickets have been released. If you were charged, you&apos;ll be refunded automatically or your booking will be confirmed if tickets are still available.
         </Alert>
         {summary}
-        <ButtonLink href={`/events/${event.slug}`} full>Start a new order</ButtonLink>
+        <ButtonLink href={resale ? "/resale" : `/events/${event.slug}`} full>{resale ? "Back to resale tickets" : "Start a new order"}</ButtonLink>
       </div>
     );
   }

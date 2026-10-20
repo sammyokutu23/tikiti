@@ -3,20 +3,24 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { CATEGORIES } from "@/server/events/queries";
 import { cn } from "@/lib/utils";
 
-/** Pill search (reference: "Search concert…" with filter icon). Plain GET form — works without JS. */
+/** White pill search with a teal filter button. Plain GET form — works without JS. */
 export function SearchPill({ defaultValue, className }: { defaultValue?: string; className?: string }) {
   return (
     <form action="/events" role="search" className={cn("relative", className)}>
       <label htmlFor="q-pill" className="sr-only">Search events</label>
-      <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted" aria-hidden />
+      <Search className="pointer-events-none absolute left-5 top-1/2 size-[22px] -translate-y-1/2 text-teal" aria-hidden />
       <input
         id="q-pill"
         name="q"
         defaultValue={defaultValue}
         placeholder="Search events, artists, venues…"
-        className="h-14 w-full rounded-full border border-line bg-fg/6 pl-12 pr-14 text-[15px] placeholder:text-muted focus:border-fg/40 focus:bg-fg/10 focus:outline-none"
+        className="h-16 w-full rounded-full border border-line bg-bg-elevated pl-14 pr-20 text-base shadow-lg shadow-black/5 placeholder:text-muted focus:border-teal/50 focus:outline-none"
       />
-      <Link href="/events#filters" aria-label="Filters" className="absolute right-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full text-muted hover:bg-fg/8 hover:text-fg">
+      <Link
+        href="/events#filters"
+        aria-label="Filters"
+        className="absolute right-2 top-1/2 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-fg shadow-md shadow-primary/30 transition hover:brightness-110"
+      >
         <SlidersHorizontal className="size-5" aria-hidden />
       </Link>
     </form>

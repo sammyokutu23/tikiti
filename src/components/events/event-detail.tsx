@@ -17,11 +17,14 @@ export function EventDetailView({
   mode,
   backHref = "/events",
   disabledReason,
+  resale,
 }: {
   detail: PublicEventDetail;
   mode: "public" | "preview";
   backHref?: string;
   disabledReason?: string | null;
+  /** Fan resale listings for this event, shown under the ticket box. */
+  resale?: React.ReactNode;
 }) {
   const { event, organizer, ticketTypes } = detail;
   const tz = event.timezone;
@@ -181,6 +184,7 @@ export function EventDetailView({
             )}
             <p className="hidden text-xs text-subtle lg:block">Secure checkout · Instant QR tickets by email · M-Pesa &amp; card (simulated in this prototype)</p>
           </div>
+          {resale}
         </aside>
       </div>
     </div>

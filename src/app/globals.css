@@ -1,103 +1,117 @@
 @import "tailwindcss";
 
 /*
- * TikoSoko design tokens. Dark (default): near-black canvas with soft charcoal
- * gradients, white pill primary actions and glassy surfaces. Light: the same
- * layout on a soft off-white canvas with black pill actions.
+ * TikoSoko design tokens ("Plans za leo?"). Light: warm cream canvas, teal
+ * primary actions, coral / sun / mint accents and clean stripe lines.
+ * Dark: the same palette on a deep blue-black canvas.
  *
  * Theme choice: <html data-theme="light|dark"> (from the tikosoko-theme cookie);
- * without the attribute the visitor's OS preference decides.
+ * without the attribute the visitor's OS preference decides. `.theme-dark`
+ * forces the dark tokens on a subtree (e.g. the header bar) in either theme.
  */
-:root {
-  --bg: #0a0a0b;
-  --bg-elevated: #141416;
-  --surface: #1a1a1d;
-  --surface-2: #232327;
-  --surface-3: #2c2c31;
+:root,
+.theme-dark {
+  --bg: #0f1316;
+  --bg-elevated: #171c20;
+  --surface: #181d21;
+  --surface-2: #20272c;
+  --surface-3: #2a3238;
   --line: rgb(255 255 255 / 0.08);
   --line-strong: rgb(255 255 255 / 0.16);
-  --fg: #f5f5f6;
-  --fg-muted: #a1a1a8;
-  --fg-subtle: #6e6e76;
-  --primary: #ffffff;
-  --primary-fg: #0a0a0b;
+  --fg: #f5f0e6;
+  --fg-muted: #a7adb2;
+  --fg-subtle: #737a80;
+  --primary: #2bb5a3;
+  --primary-fg: #06201c;
   --success: #4ade80;
   --warning: #fbbf24;
   --danger: #f87171;
   --info: #93c5fd;
-  --glow: rgb(255 255 255 / 0.07);
-  --glow-2: rgb(255 255 255 / 0.03);
-  --nav-glass: rgb(30 30 34 / 0.55);
+  --teal: #2bb5a3;
+  --coral: #f46a45;
+  --sun: #f7b731;
+  --mint: #c4e8df;
+  --glow: rgb(43 181 163 / 0.08);
+  --glow-2: rgb(247 183 49 / 0.05);
+  --nav-glass: rgb(23 28 32 / 0.92);
   --shimmer: rgb(255 255 255 / 0.05);
-  /* TikoSoko logo: the dark variant from the brand sheet. */
-  --brand-ink: #f5efe3;
-  --brand-accent: #f2b84b;
-  --brand-cart: #a8372a;
-  --brand-ticket: #f2b84b;
-  --brand-check: #f5efe3;
-  --brand-wheel: #f5efe3;
+  /* TikoSoko logo on dark: cream ink, coral cart, teal ticket. */
+  --brand-ink: #ffffff;
+  --brand-accent: #f46a45;
+  --brand-cart: #f46a45;
+  --brand-ticket: #2bb5a3;
+  --brand-check: #ffffff;
+  --brand-wheel: #f5f0e6;
   color-scheme: dark;
 }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #f5f5f7;
+    --bg: #f7f2e8;
     --bg-elevated: #ffffff;
     --surface: #ffffff;
-    --surface-2: #efeff2;
-    --surface-3: #e4e4e9;
-    --line: rgb(0 0 0 / 0.09);
-    --line-strong: rgb(0 0 0 / 0.18);
-    --fg: #0b0b0d;
-    --fg-muted: #55555e;
-    --fg-subtle: #85858f;
-    --primary: #0b0b0d;
+    --surface-2: #efe8da;
+    --surface-3: #e4dbc9;
+    --line: rgb(20 23 26 / 0.09);
+    --line-strong: rgb(20 23 26 / 0.18);
+    --fg: #14171a;
+    --fg-muted: #5a5f64;
+    --fg-subtle: #8a8f94;
+    --primary: #0f7f72;
     --primary-fg: #ffffff;
     --success: #15803d;
     --warning: #b45309;
     --danger: #dc2626;
     --info: #1d4ed8;
-    --glow: rgb(0 0 0 / 0.035);
-    --glow-2: rgb(0 0 0 / 0.02);
-    --nav-glass: rgb(255 255 255 / 0.72);
+    --teal: #0f7f72;
+    --coral: #f25f3a;
+    --sun: #f7b731;
+    --mint: #c4e8df;
+    --glow: rgb(15 127 114 / 0.05);
+    --glow-2: rgb(247 183 49 / 0.06);
+    --nav-glass: rgb(255 255 255 / 0.9);
     --shimmer: rgb(0 0 0 / 0.05);
-    --brand-ink: #24484a;
-    --brand-accent: #9b3324;
-    --brand-cart: #9b3324;
-    --brand-ticket: #24484a;
-    --brand-check: #f2b84b;
-    --brand-wheel: #24484a;
+    --brand-ink: #14171a;
+    --brand-accent: #f25f3a;
+    --brand-cart: #f25f3a;
+    --brand-ticket: #0f7f72;
+    --brand-check: #ffffff;
+    --brand-wheel: #14171a;
     color-scheme: light;
   }
 }
 
 :root[data-theme="light"] {
-  --bg: #f5f5f7;
+  --bg: #f7f2e8;
   --bg-elevated: #ffffff;
   --surface: #ffffff;
-  --surface-2: #efeff2;
-  --surface-3: #e4e4e9;
-  --line: rgb(0 0 0 / 0.09);
-  --line-strong: rgb(0 0 0 / 0.18);
-  --fg: #0b0b0d;
-  --fg-muted: #55555e;
-  --fg-subtle: #85858f;
-  --primary: #0b0b0d;
+  --surface-2: #efe8da;
+  --surface-3: #e4dbc9;
+  --line: rgb(20 23 26 / 0.09);
+  --line-strong: rgb(20 23 26 / 0.18);
+  --fg: #14171a;
+  --fg-muted: #5a5f64;
+  --fg-subtle: #8a8f94;
+  --primary: #0f7f72;
   --primary-fg: #ffffff;
   --success: #15803d;
   --warning: #b45309;
   --danger: #dc2626;
   --info: #1d4ed8;
-  --glow: rgb(0 0 0 / 0.035);
-  --glow-2: rgb(0 0 0 / 0.02);
-  --nav-glass: rgb(255 255 255 / 0.72);
+  --teal: #0f7f72;
+  --coral: #f25f3a;
+  --sun: #f7b731;
+  --mint: #c4e8df;
+  --glow: rgb(15 127 114 / 0.05);
+  --glow-2: rgb(247 183 49 / 0.06);
+  --nav-glass: rgb(255 255 255 / 0.9);
   --shimmer: rgb(0 0 0 / 0.05);
-  --brand-ink: #24484a;
-  --brand-accent: #9b3324;
-  --brand-cart: #9b3324;
-  --brand-ticket: #24484a;
-  --brand-check: #f2b84b;
-  --brand-wheel: #24484a;
+  --brand-ink: #14171a;
+  --brand-accent: #f25f3a;
+  --brand-cart: #f25f3a;
+  --brand-ticket: #0f7f72;
+  --brand-check: #ffffff;
+  --brand-wheel: #14171a;
   color-scheme: light;
 }
 
@@ -118,8 +132,13 @@
   --color-warning: var(--warning);
   --color-danger: var(--danger);
   --color-info: var(--info);
+  --color-teal: var(--teal);
+  --color-coral: var(--coral);
+  --color-sun: var(--sun);
+  --color-mint: var(--mint);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-script: var(--font-caveat), "Comic Sans MS", cursive;
   --radius-card: 1.75rem;
 }
 
@@ -129,8 +148,8 @@ html {
 
 body {
   background:
-    radial-gradient(1200px 600px at 50% -10%, var(--glow), transparent 60%),
-    radial-gradient(800px 400px at 100% 0%, var(--glow-2), transparent 60%),
+    radial-gradient(1200px 600px at 85% -10%, var(--glow), transparent 60%),
+    radial-gradient(900px 500px at 0% 30%, var(--glow-2), transparent 60%),
     var(--bg);
   background-attachment: fixed;
   color: var(--fg);
@@ -144,7 +163,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--fg);
+  outline: 2px solid var(--teal);
   outline-offset: 2px;
 }
 
@@ -244,7 +263,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   background: var(--surface-3);
 }
 .tikosoko-map .leaflet-container:focus-visible {
-  outline: 2px solid var(--fg);
+  outline: 2px solid var(--teal);
   outline-offset: -2px;
 }
 .tikosoko-pin {

@@ -22,6 +22,10 @@ export type EmailKind =
   | "plan_final_deadline"
   | "plan_ended"
   | "plan_payment_review"
+  // customer — resale marketplace
+  | "resale_purchase_confirmed"
+  | "resale_sold"
+  | "resale_listing_reviewed"
   // customer — event lifecycle
   | "event_reminder"
   | "event_updated"
@@ -50,6 +54,8 @@ export const CRITICAL_KINDS: ReadonlySet<EmailKind> = new Set([
   "plan_deposit_confirmed",
   "plan_payment_confirmed",
   "plan_ended",
+  "resale_purchase_confirmed",
+  "resale_sold",
 ]);
 
 const SUBJECT_PLACEHOLDER: Record<EmailKind, string> = {
@@ -68,6 +74,9 @@ const SUBJECT_PLACEHOLDER: Record<EmailKind, string> = {
   plan_final_deadline: "Final payment deadline",
   plan_ended: "Payment plan ended",
   plan_payment_review: "Confirming your installment",
+  resale_purchase_confirmed: "Your resale ticket",
+  resale_sold: "Your ticket sold",
+  resale_listing_reviewed: "Your resale listing",
   event_reminder: "Event reminder",
   event_updated: "Event update",
   organizer_event_published: "Event published",

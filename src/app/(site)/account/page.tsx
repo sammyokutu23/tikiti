@@ -17,7 +17,16 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
 
   return (
     <div className="mx-auto max-w-4xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
-      <PageHeader title="My tickets" subtitle={`Signed in as ${user.email}`} />
+      <PageHeader
+        title="My tickets"
+        subtitle={`Signed in as ${user.email}`}
+        actions={
+          <>
+            <ButtonLink href="/resale/sell" variant="secondary" size="sm">Sell a ticket</ButtonLink>
+            <ButtonLink href="/resale/mine" variant="ghost" size="sm">My resale listings</ButtonLink>
+          </>
+        }
+      />
       <Tabs
         active={scope}
         items={[

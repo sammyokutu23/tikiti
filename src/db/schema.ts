@@ -12,6 +12,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  customType,
   doublePrecision,
   index,
   integer,
@@ -29,6 +30,7 @@ import {
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 const createdAt = () => ts("created_at").notNull().defaultNow();
 const updatedAt = () => ts("updated_at").notNull().defaultNow();
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
 
 // ─── Enums ──────────────────────────────────────────────────────────────────
 
@@ -159,6 +161,23 @@ export const installmentStatus = pgEnum("installment_status", [
   "cancelled",
 ]);
 export const bannerGenerationStatus = pgEnum("banner_generation_status", ["pending", "succeeded", "failed"]);
+/** A TikoSoko-issued ticket (verified, reissued on sale) or one bought on another platform. */
+export const resaleListingKind = pgEnum("resale_listing_kind", ["platform", "external"]);
+/**
+ * Resale listing lifecycle:
+ *   platform: active ──buyer's payment verified──▶ sold
+ *   external: pending_review ──admin approves──▶ active ──▶ sold
+ *             pending_review ──admin rejects──▶ rejected
+ *   active ──seller withdraws──▶ cancelled
+ *   active ──event ended / ticket used, refunded or revoked──▶ closed
+ */
+export const resaleListingStatus = pgEnum("resale_listing_status", ["pending_review", "active", "sold", "cancelled", "rejected", "closed"]);
+/**
+ * Seller payout (escrow): held until release_at (after the event), then an admin
+ * sends it by M-Pesa and records the receipt. A buyer dispute pauses it; a
+ * refund to the buyer cancels it.
+ */
+export const resalePayoutStatus = pgEnum("resale_payout_status", ["held", "disputed", "paid", "cancelled"]);
 
 // ─── Identity ───────────────────────────────────────────────────────────────
 
@@ -269,6 +288,8 @@ export const events = pgTable(
     /** Organizer opt-in for Lipa Mdogo Mdogo installment plans. */
     installmentsEnabled: boolean("installments_enabled").notNull().default(false),
     isFeatured: boolean("is_featured").notNull().default(false),
+    /** Outside event created for a resale listing of a ticket bought elsewhere. Never listed publicly. */
+    isExternal: boolean("is_external").notNull().default(false),
     /** Admin moderation: hidden events never appear publicly regardless of status. */
     isHidden: boolean("is_hidden").notNull().default(false),
     hiddenReason: text("hidden_reason"),
@@ -373,11 +394,16 @@ export const bookings = pgTable(
     cancelledAt: ts("cancelled_at"),
     /** Client-supplied key; repeated checkout submissions return the same booking. */
     idempotencyKey: text("idempotency_key").unique(),
+    /** Set when this booking buys a resale listing instead of new inventory (see ../server/resale). */
+    resaleListingId: uuid("resale_listing_id").references((): AnyPgColumn => resaleListings.id),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
     index("bookings_event_idx").on(t.eventId, t.status),
+    index("bookings_resale_listing_idx").on(t.resaleListingId),
+    // A listing can be sold once.
+    uniqueIndex("bookings_resale_confirmed_uq").on(t.resaleListingId).where(sql`${t.status} = 'confirmed'`),
     index("bookings_user_idx").on(t.userId),
     index("bookings_email_idx").on(sql`lower(${t.buyerEmail})`),
     index("bookings_pending_expiry_idx").on(t.expiresAt).where(sql`${t.status} = 'pending'`),
@@ -799,6 +825,123 @@ export const jobs = pgTable(
   (t) => [index("jobs_pending_idx").on(t.runAt).where(sql`${t.status} = 'pending'`)],
 );
 
+// ─── Resale marketplace ─────────────────────────────────────────────────────
+
+export const resaleListings = pgTable(
+  "resale_listings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Public reference, e.g. RS-7KQ2-9XHM. */
+    reference: text("reference").notNull().unique(),
+    kind: resaleListingKind("kind").notNull(),
+    status: resaleListingStatus("status").notNull(),
+    sellerUserId: uuid("seller_user_id")
+      .notNull()
+      .references(() => users.id),
+    /** Platform: the ticket's event. External: set when an admin approves (linked or outside event). */
+    eventId: uuid("event_id").references(() => events.id),
+    /** Platform listings only: the seller's ticket, revoked and reissued to the buyer on sale. */
+    ticketId: uuid("ticket_id").references(() => tickets.id),
+    ticketTypeName: text("ticket_type_name").notNull(),
+    /** Asking price; the seller receives all of it. The buyer pays it plus the resale fee. */
+    priceMinor: integer("price_minor").notNull(),
+    currency: text("currency").notNull().default("KES"),
+    /** M-Pesa number the seller is paid on. */
+    payoutPhone: text("payout_phone").notNull(),
+    /** External listings: what the seller told us about the ticket. */
+    externalEventName: text("external_event_name"),
+    externalVenue: text("external_venue"),
+    externalCity: text("external_city"),
+    externalStartsAt: ts("external_starts_at"),
+    externalPlatform: text("external_platform"),
+    externalOrderRef: text("external_order_ref"),
+    sellerNote: text("seller_note").notNull().default(""),
+    reviewNote: text("review_note"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: ts("reviewed_at"),
+    soldBookingId: uuid("sold_booking_id").references((): AnyPgColumn => bookings.id),
+    soldAt: ts("sold_at"),
+    closedAt: ts("closed_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("resale_listings_status_idx").on(t.status, t.eventId),
+    index("resale_listings_seller_idx").on(t.sellerUserId),
+    // One open listing per ticket.
+    uniqueIndex("resale_listings_open_ticket_uq").on(t.ticketId).where(sql`${t.status} IN ('pending_review', 'active')`),
+    check("resale_listings_price", sql`${t.priceMinor} > 0 AND ${t.priceMinor} % 100 = 0`),
+    check(
+      "resale_listings_kind_fields",
+      sql`(${t.kind} = 'platform' AND ${t.ticketId} IS NOT NULL AND ${t.eventId} IS NOT NULL) OR (${t.kind} = 'external' AND ${t.ticketId} IS NULL AND ${t.externalEventName} IS NOT NULL AND ${t.externalStartsAt} IS NOT NULL)`,
+    ),
+    check("resale_listings_live_has_event", sql`${t.status} NOT IN ('active', 'sold') OR ${t.eventId} IS NOT NULL`),
+  ],
+);
+
+/**
+ * Files a seller uploads for an external listing: the ticket itself (handed to the
+ * buyer after payment) and proof of purchase (admins only). Stored in the database,
+ * never in the public image bucket.
+ */
+export const resaleDocuments = pgTable(
+  "resale_documents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    listingId: uuid("listing_id")
+      .notNull()
+      .references(() => resaleListings.id, { onDelete: "cascade" }),
+    purpose: text("purpose").notNull(),
+    filename: text("filename").notNull(),
+    contentType: text("content_type").notNull(),
+    sizeBytes: integer("size_bytes").notNull(),
+    data: bytea("data").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index("resale_documents_listing_idx").on(t.listingId),
+    check("resale_documents_purpose", sql`${t.purpose} IN ('ticket', 'proof')`),
+  ],
+);
+
+export const resalePayouts = pgTable(
+  "resale_payouts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    listingId: uuid("listing_id")
+      .notNull()
+      .unique()
+      .references(() => resaleListings.id),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .unique()
+      .references(() => bookings.id),
+    sellerUserId: uuid("seller_user_id")
+      .notNull()
+      .references(() => users.id),
+    amountMinor: integer("amount_minor").notNull(),
+    currency: text("currency").notNull().default("KES"),
+    payoutPhone: text("payout_phone").notNull(),
+    status: resalePayoutStatus("status").notNull().default("held"),
+    /** Earliest moment an admin may pay it out (after the event, plus a window for buyer reports). */
+    releaseAt: ts("release_at").notNull(),
+    disputeReason: text("dispute_reason"),
+    disputedAt: ts("disputed_at"),
+    paidAt: ts("paid_at"),
+    paidBy: uuid("paid_by").references(() => users.id),
+    /** M-Pesa receipt of the payout, recorded by the admin who sent it. */
+    payoutReference: text("payout_reference"),
+    note: text("note"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("resale_payouts_status_idx").on(t.status, t.releaseAt),
+    index("resale_payouts_seller_idx").on(t.sellerUserId),
+    check("resale_payouts_amount", sql`${t.amountMinor} > 0`),
+  ],
+);
+
 // ─── Audit ──────────────────────────────────────────────────────────────────
 
 export const auditLogs = pgTable(
@@ -830,3 +973,5 @@ export type EmailDelivery = typeof emailDeliveries.$inferSelect;
 export type PaymentPlan = typeof paymentPlans.$inferSelect;
 export type PlanInstallment = typeof planInstallments.$inferSelect;
 export type BannerGeneration = typeof bannerGenerations.$inferSelect;
+export type ResaleListing = typeof resaleListings.$inferSelect;
+export type ResalePayout = typeof resalePayouts.$inferSelect;

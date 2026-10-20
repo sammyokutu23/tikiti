@@ -10,6 +10,7 @@ import { enqueueJob } from "../jobs/queue";
 import { recordRefundLedger } from "../ledger";
 import { bookingLines, cancelPendingBooking, lockBooking } from "./lifecycle";
 import { endPlan } from "../plans/apply";
+import { cancelResalePayout } from "../resale/lifecycle";
 
 /**
  * Full refund of a confirmed booking (prototype supports whole-booking refunds).
@@ -70,7 +71,9 @@ export async function refundBooking(
         .returning();
       if (i === 0) {
         refundId = refund.id;
-        await recordRefundLedger(tx, {
+        // Resale money never reached the organizer: cancel the seller's payout instead.
+        if (booking.resaleListingId) await cancelResalePayout(tx, booking, args.actorUserId);
+        else await recordRefundLedger(tx, {
           booking,
           organizerId: event.organizerId,
           refundId: refund.id,

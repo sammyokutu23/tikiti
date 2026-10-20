@@ -1,8 +1,8 @@
 import Link from "next/link";
 import QRCode from "qrcode";
-import { CalendarDays, Download, MapPin, ShieldAlert, UserPlus } from "lucide-react";
+import { CalendarDays, Download, FileText, MapPin, Repeat, ShieldAlert, UserPlus } from "lucide-react";
 import { EventImage } from "@/components/events/event-image";
-import { Alert, Badge, ButtonLink, Card, EmptyState, StatusBadge, buttonClasses } from "@/components/ui";
+import { Alert, Badge, ButtonLink, Card, EmptyState, StatusBadge, Textarea, buttonClasses } from "@/components/ui";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { formatDateTime } from "@/lib/dates";
 import { formatAmount, formatMoney } from "@/lib/money";
@@ -15,6 +15,8 @@ import { ResendTicketsForm } from "../forms";
 import { PlanPanel } from "../plan-panel";
 import { Flash } from "@/components/dash/flash";
 import { planView } from "@/server/plans/service";
+import { openListingsForTickets, resaleForBooking } from "@/server/resale/listings";
+import { disputeResaleAction } from "../../resale/actions";
 
 export const metadata = { title: "Your booking", robots: { index: false } };
 
@@ -61,6 +63,11 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
   const tz = event.timezone;
   const confirmed = booking.status === "confirmed";
   const latestEmail = d.emails.find((e) => e.kind === "booking_confirmation");
+  const resale = booking.resaleListingId ? await resaleForBooking(booking.id, booking.resaleListingId) : null;
+  const outsideTicket = resale?.listing.kind === "external";
+  const listed = new Map((await openListingsForTickets(d.tickets.map((t) => t.ticket.id))).map((l) => [l.ticketId, l]));
+  const canResell = access.isOwner && event.status === "published" && event.endsAt > new Date();
+  const canDispute = confirmed && resale?.payout?.status === "held" && resale.payout.releaseAt > new Date();
 
   const qrSvgs = confirmed
     ? await Promise.all(
@@ -88,7 +95,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
               <div className="absolute inset-x-5 bottom-4">
                 <p className="text-sm text-white/80">Booking {booking.reference}</p>
                 <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                  <Link href={`/events/${event.slug}`} className="hover:underline">{event.title}</Link>
+                  {event.isExternal ? event.title : <Link href={`/events/${event.slug}`} className="hover:underline">{event.title}</Link>}
                 </h1>
               </div>
             </div>
@@ -100,6 +107,14 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
 
           {event.status === "cancelled" && (
             <Alert tone="danger" title="This event was cancelled">{event.cancellationReason} Your booking has been refunded.</Alert>
+          )}
+
+          {resale && confirmed && (
+            <Alert tone="info" title={outsideTicket ? "Resale ticket from another platform" : "Bought on TikoSoko resale"}>
+              {outsideTicket
+                ? `This ticket was originally bought${resale.listing.externalPlatform ? ` on ${resale.listing.externalPlatform}` : " elsewhere"} and reviewed by TikoSoko. Download it below.`
+                : "The seller's old ticket was cancelled. The ticket below is new and only yours."}
+            </Alert>
           )}
 
           {plan && (
@@ -123,6 +138,28 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
                 <ButtonLink href={`/checkout/${booking.reference}${q}`} className="mt-4">Continue to payment</ButtonLink>
               )}
             </Card>
+          ) : outsideTicket ? (
+            <section className="space-y-4" aria-labelledby="tickets-h">
+              <h2 id="tickets-h" className="text-xl font-semibold">Your ticket</h2>
+              <Card className="space-y-4 p-5">
+                <div>
+                  <p className="font-semibold">{resale.listing.ticketTypeName}</p>
+                  <p className="text-sm text-muted">Use the seller&apos;s ticket file at the gate, exactly as it would have been used on {resale.listing.externalPlatform ?? "the original platform"}.</p>
+                </div>
+                {resale.listing.sellerNote && <p className="rounded-2xl bg-surface-2 p-3 text-sm"><span className="font-semibold">Seller&apos;s note:</span> {resale.listing.sellerNote}</p>}
+                <div className="flex flex-wrap gap-2">
+                  {resale.docs.map((doc) => (
+                    <a
+                      key={doc.id}
+                      href={`/api/resale/documents/${doc.id}?ref=${booking.reference}${access.token ? `&access=${encodeURIComponent(access.token)}` : ""}`}
+                      className={buttonClasses("primary", "md")}
+                    >
+                      <FileText className="size-4" aria-hidden /> Download ticket ({doc.filename.split(".").pop()?.toUpperCase()})
+                    </a>
+                  ))}
+                </div>
+              </Card>
+            </section>
           ) : (
             <section className="space-y-4" aria-labelledby="tickets-h">
               <div className="flex flex-wrap items-end justify-between gap-3">
@@ -134,6 +171,8 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
               <div className="grid gap-4 sm:grid-cols-2">
                 {d.tickets.map(({ ticket, typeName }, i) => {
                   const usable = ticket.status === "valid" || ticket.status === "checked_in";
+                  const listing = listed.get(ticket.id);
+                  const resold = ticket.status === "revoked" && ticket.revokeReason?.startsWith("Resold");
                   return (
                     <article key={ticket.id} className="overflow-hidden rounded-[1.75rem] border border-line bg-surface">
                       <div className="flex items-start justify-between gap-3 p-5 pb-3">
@@ -159,7 +198,19 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
                         {ticket.status === "checked_in" && ticket.checkedInAt && (
                           <p className="text-xs text-info">Checked in {formatDateTime(ticket.checkedInAt, tz)}</p>
                         )}
-                        {!usable && <p className="text-xs text-danger">Not valid for entry</p>}
+                        {resold ? (
+                          <p className="text-xs text-info">Resold to another fan</p>
+                        ) : (
+                          !usable && <p className="text-xs text-danger">Not valid for entry</p>
+                        )}
+                        {listing && (
+                          <Link href="/resale/mine" className="inline-flex items-center gap-1 rounded-full bg-sun/20 px-3 py-1 text-xs font-semibold text-fg">
+                            <Repeat className="size-3.5" aria-hidden /> Listed for resale · {formatMoney(listing.priceMinor)}
+                          </Link>
+                        )}
+                        {!listing && canResell && ticket.status === "valid" && (
+                          <Link href="/resale/sell" className="text-xs font-semibold text-teal hover:underline">Can&apos;t go? Resell this ticket</Link>
+                        )}
                         <a
                           href={`/api/bookings/${booking.reference}/tickets/${ticket.code}/pdf${q}`}
                           className={buttonClasses("secondary", "sm")}
@@ -182,10 +233,22 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
             <dl className="space-y-2">
               {d.items.map((it) => (
                 <div key={it.id} className="flex justify-between gap-3">
-                  <dt className="text-fg/85">{it.quantity} × {it.ticketTypeName}</dt>
+                  <dt className="text-fg/85">{it.quantity} × {it.ticketTypeName}{resale ? " (resale)" : ""}</dt>
                   <dd className="tabular-nums">{formatAmount(it.lineTotalMinor)}</dd>
                 </div>
               ))}
+              {outsideTicket && (
+                <div className="flex justify-between gap-3">
+                  <dt className="text-fg/85">1 × {resale.listing.ticketTypeName} (resale)</dt>
+                  <dd className="tabular-nums">{formatAmount(booking.subtotalMinor)}</dd>
+                </div>
+              )}
+              {booking.feesMinor > 0 && (
+                <div className="flex justify-between gap-3 text-muted">
+                  <dt>Resale fee</dt>
+                  <dd className="tabular-nums">{formatAmount(booking.feesMinor)}</dd>
+                </div>
+              )}
               <div className="flex justify-between gap-3 border-t border-line pt-2 font-semibold">
                 <dt>Total</dt>
                 <dd className="tabular-nums">{formatMoney(booking.totalMinor)}</dd>
@@ -214,7 +277,27 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
             </Card>
           )}
 
-          {confirmed && (
+          {resale?.payout && confirmed && (
+            <Card className="space-y-3 p-5 text-sm">
+              <h2 className="font-semibold">Problem with this ticket?</h2>
+              {resale.payout.status === "disputed" ? (
+                <p className="text-muted">You reported a problem. The seller&apos;s payment is on hold and our team will contact you at {booking.buyerEmail}.</p>
+              ) : canDispute ? (
+                <form action={disputeResaleAction} className="space-y-2">
+                  <input type="hidden" name="reference" value={booking.reference} />
+                  <input type="hidden" name="access" value={access.token ?? ""} />
+                  <p className="text-muted">If the ticket didn&apos;t get you in, tell us before {formatDateTime(resale.payout.releaseAt, tz)}. The seller isn&apos;t paid while we look into it, and you&apos;re refunded if it was the seller&apos;s fault.</p>
+                  <label htmlFor="reason" className="sr-only">What went wrong</label>
+                  <Textarea id="reason" name="reason" required minLength={10} placeholder="e.g. The QR code was rejected at the gate" className="min-h-20" />
+                  <SubmitButton variant="secondary" full>Report a problem</SubmitButton>
+                </form>
+              ) : (
+                <p className="text-muted">The reporting window has closed. Contact support if you need help.</p>
+              )}
+            </Card>
+          )}
+
+          {confirmed && !outsideTicket && (
             <Card className="space-y-3 p-5 text-sm">
               <h2 className="font-semibold">Email delivery</h2>
               <p className="text-muted">{latestEmail ? EMAIL_STATUS[latestEmail.status] ?? latestEmail.status : "Not sent yet"}</p>

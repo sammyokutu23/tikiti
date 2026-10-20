@@ -321,6 +321,106 @@ ${para("Your existing tickets remain valid. If you can no longer attend, reply t
   };
 }
 
+// ─── Customer: resale marketplace ────────────────────────────────────────────
+
+/** Buyer of a ticket bought on another platform: the seller's file is on the booking page. */
+export function resalePurchaseConfirmedEmail(d: BookingEmailData & { platform: string | null; releaseAt: Date }): Rendered {
+  const subject = `Your resale ticket for ${d.eventTitle} — ${d.reference}`;
+  const html = layout({
+    title: subject,
+    preheader: "Download the ticket from your booking page.",
+    audience: "customer",
+    supportEmail: d.supportEmail,
+    body: `${eyebrow("Resale purchase confirmed")}
+${h1(`You're going to ${esc(d.eventTitle)}`)}
+${para(`Hi ${esc(firstName(d.buyerName))}, your payment of <b>${formatMoney(d.totalMinor, d.currency)}</b> went through. This ticket was originally bought${d.platform ? ` on <b>${esc(d.platform)}</b>` : " on another platform"} and reviewed by TikoSoko before it was listed.`)}
+${whenWhere(d)}
+<p style="margin:0 0 20px">${button(d.ticketsUrl, "Download my ticket")}</p>
+${note(`The seller isn't paid until after the event. If the ticket doesn't work, report it from your booking page before <b>${esc(formatDateTime(d.releaseAt, d.timezone))}</b> and we'll refund you.`)}`,
+  });
+  return {
+    subject,
+    html,
+    text: textBlock([
+      `Your resale ticket for ${d.eventTitle} (${d.reference}) is confirmed.`,
+      `When: ${formatDateTime(d.startsAt, d.timezone)}`,
+      `Where: ${d.venue}`,
+      `Download the ticket: ${d.ticketsUrl}`,
+      `If it doesn't work, report it from your booking page before ${formatDateTime(d.releaseAt, d.timezone)} for a refund.`,
+    ]),
+  };
+}
+
+export type ResaleSellerEmailData = {
+  sellerName: string;
+  reference: string;
+  eventTitle: string;
+  ticketTypeName: string;
+  priceMinor: number;
+  currency: string;
+  timezone: string;
+  listingsUrl: string;
+  supportEmail: string;
+};
+
+export function resaleSoldEmail(d: ResaleSellerEmailData & { payoutPhone: string; releaseAt: Date; platform: boolean }): Rendered {
+  const subject = `Your ticket sold — ${d.eventTitle}`;
+  const html = layout({
+    title: subject,
+    preheader: `${formatMoney(d.priceMinor, d.currency)} is on its way after the event.`,
+    audience: "account",
+    supportEmail: d.supportEmail,
+    body: `${eyebrow("Ticket sold")}
+${h1("Someone bought your ticket")}
+${para(`Hi ${esc(firstName(d.sellerName))}, your ${esc(d.ticketTypeName)} ticket for <b>${esc(d.eventTitle)}</b> (${esc(d.reference)}) sold.`)}
+${details([
+  ["You receive", `<b>${formatMoney(d.priceMinor, d.currency)}</b>`],
+  ["Paid to M-Pesa", esc(d.payoutPhone)],
+  ["Paid out after", esc(formatDateTime(d.releaseAt, d.timezone))],
+])}
+${d.platform ? note("Your old ticket and its QR code no longer work. The buyer has a new one, so please don't try to use or share your copy.") : note("Please don't use or share your copy of the ticket. If the buyer reports it didn't work, your payout is paused while we look into it.")}
+<p style="margin:0 0 20px">${button(d.listingsUrl, "View my listings")}</p>`,
+  });
+  return {
+    subject,
+    html,
+    text: textBlock([
+      `Your ${d.ticketTypeName} ticket for ${d.eventTitle} (${d.reference}) sold.`,
+      `You receive ${formatMoney(d.priceMinor, d.currency)} on M-Pesa ${d.payoutPhone} after ${formatDateTime(d.releaseAt, d.timezone)}.`,
+      d.platform ? "Your old ticket no longer works; the buyer has a new one." : "Please don't use or share your copy of the ticket.",
+      d.listingsUrl,
+    ]),
+  };
+}
+
+export function resaleListingReviewedEmail(d: ResaleSellerEmailData & { approved: boolean; note?: string }): Rendered {
+  const subject = d.approved ? `Your ticket is listed — ${d.eventTitle}` : `We couldn't list your ticket — ${d.eventTitle}`;
+  const html = layout({
+    title: subject,
+    preheader: d.approved ? "Buyers can now find it on the resale marketplace." : "See why below.",
+    audience: "account",
+    supportEmail: d.supportEmail,
+    body: `${eyebrow(d.approved ? "Listing approved" : "Listing not approved")}
+${h1(d.approved ? "Your ticket is live" : "Your listing wasn't approved")}
+${para(
+  d.approved
+    ? `Hi ${esc(firstName(d.sellerName))}, we checked your ${esc(d.ticketTypeName)} ticket for <b>${esc(d.eventTitle)}</b> and it's now on the resale marketplace for ${formatMoney(d.priceMinor, d.currency)}.`
+    : `Hi ${esc(firstName(d.sellerName))}, we couldn't approve your ${esc(d.ticketTypeName)} ticket for <b>${esc(d.eventTitle)}</b> (${esc(d.reference)}).`,
+)}
+${d.note ? note(`<b>Reason:</b> ${esc(d.note)}`) : ""}
+<p style="margin:0 0 20px">${button(d.listingsUrl, "View my listings")}</p>`,
+  });
+  return {
+    subject,
+    html,
+    text: textBlock([
+      d.approved ? `Your ticket for ${d.eventTitle} is now listed for ${formatMoney(d.priceMinor, d.currency)}.` : `We couldn't approve your ticket for ${d.eventTitle} (${d.reference}).`,
+      d.note ? `Reason: ${d.note}` : null,
+      d.listingsUrl,
+    ]),
+  };
+}
+
 // ─── Organizer ───────────────────────────────────────────────────────────────
 
 export type OrganizerEmailData = {

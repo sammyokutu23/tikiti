@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { bookingItems, bookings, events, tickets, ticketTypes } from "@/db/schema";
 import { financialSummary } from "../ledger";
@@ -39,7 +39,8 @@ export type RecentBooking = Awaited<ReturnType<typeof recentBookings>>[number];
 
 export async function recentBookings(args: { eventIds: string[]; limit?: number; q?: string; status?: string }) {
   if (args.eventIds.length === 0) return [];
-  const conds = [inArray(bookings.eventId, args.eventIds)];
+  // Fan-to-fan resales aren't organizer sales; the reissued ticket still shows under attendees.
+  const conds = [inArray(bookings.eventId, args.eventIds), isNull(bookings.resaleListingId)];
   if (args.q?.trim()) {
     const t = `%${args.q.trim().replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
     conds.push(
@@ -92,7 +93,7 @@ export async function eventSalesStats(eventId: string) {
       pending: sql<number>`count(*) filter (where ${bookings.status} = 'pending')::int`,
     })
     .from(bookings)
-    .where(eq(bookings.eventId, eventId));
+    .where(and(eq(bookings.eventId, eventId), isNull(bookings.resaleListingId)));
   return {
     types,
     sold: types.reduce((s, t) => s + t.sold, 0),

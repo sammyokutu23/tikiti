@@ -10,7 +10,7 @@ type Size = "sm" | "md" | "lg";
 
 export function buttonClasses(variant: Variant = "primary", size: Size = "md", full = false) {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition select-none",
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full font-semibold transition select-none",
     "disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fg",
     size === "sm" && "h-9 px-4 text-sm",

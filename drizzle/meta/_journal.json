@@ -50,6 +50,13 @@
       "when": 1792070139795,
       "tag": "0006_plans_and_banners",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792491420127,
+      "tag": "0007_resale",
+      "breakpoints": true
     }
   ]
 }

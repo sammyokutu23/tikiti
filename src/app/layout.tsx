@@ -2,7 +2,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Caveat, Geist, Geist_Mono } from "next/font/google";
 import { BottomNav } from "@/components/site/bottom-nav";
 import { SiteHeader } from "@/components/site/header";
 import { LEGACY_THEME_COOKIE, THEME_COOKIE, parseTheme } from "@/lib/theme";
@@ -11,6 +11,7 @@ import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const caveat = Caveat({ variable: "--font-caveat", subsets: ["latin"], weight: ["600", "700"] });
 
 export const metadata: Metadata = {
   title: { default: "TikoSoko — Event tickets in Kenya", template: "%s · TikoSoko" },
@@ -19,8 +20,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0b" },
-    { media: "(prefers-color-scheme: light)", color: "#f5f5f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1316" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f2e8" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -36,7 +37,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en-KE"
       data-theme={theme === "system" ? undefined : theme}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <ClerkProvider appearance={clerkAppearance}>

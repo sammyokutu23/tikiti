@@ -11,6 +11,7 @@ export function OrderSummary({
   feesMinor = 0,
   discountMinor = 0,
   totalMinor,
+  feeLabel = "Booking fee",
   footer,
 }: {
   event: { title: string; coverImageUrl: string | null; startsAt: Date; timezone: string; venueName: string; city: string };
@@ -19,6 +20,7 @@ export function OrderSummary({
   feesMinor?: number;
   discountMinor?: number;
   totalMinor: number;
+  feeLabel?: string;
   footer?: React.ReactNode;
 }) {
   return (
@@ -43,7 +45,7 @@ export function OrderSummary({
           <dd className="tabular-nums">{formatAmount(subtotalMinor)}</dd>
         </div>
         <div className="flex justify-between gap-4 text-muted">
-          <dt>Booking fee</dt>
+          <dt>{feeLabel}</dt>
           <dd className="tabular-nums">{feesMinor ? formatAmount(feesMinor) : "KES 0"}</dd>
         </div>
         {discountMinor > 0 && (

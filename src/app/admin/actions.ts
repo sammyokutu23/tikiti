@@ -21,6 +21,8 @@ import { MAX_COMMISSION_BPS, setCommissionBps, getCommissionBps } from "@/server
 import { bannerLimitsSchema, setBannerLimits } from "@/server/banners/service";
 import { planPolicySchema, setPlanPolicy } from "@/server/plans/policy";
 import { adminCancelPlan, adminResolveLatePayment } from "@/server/plans/service";
+import { approveExternalListing, approveExternalSchema, cancelListing, rejectExternalListing } from "@/server/resale/listings";
+import { markPayoutPaid, refundDisputedResale, releaseDisputedPayout } from "@/server/resale/payouts";
 
 const back = (fd: FormData, fallback: string) => {
   const b = String(fd.get("back") ?? "");
@@ -303,5 +305,63 @@ export async function resolveLatePlanPaymentAction(fd: FormData) {
     const msg = await adminResolveLatePayment(id, admin, action);
     await processDueJobs(5);
     return msg;
+  });
+}
+
+// ─── Resale marketplace ──────────────────────────────────────────────────────
+
+export async function approveResaleAction(fd: FormData) {
+  const admin = await requireAdmin();
+  await run(fd, "/admin/resale", async () => {
+    const parsed = approveExternalSchema.safeParse({
+      mode: fd.get("mode"),
+      eventId: fd.get("eventId") || undefined,
+      title: fd.get("title"),
+      venue: fd.get("venue"),
+      city: fd.get("city"),
+      category: fd.get("category"),
+      startsAtLocal: fd.get("startsAtLocal"),
+      endsAtLocal: fd.get("endsAtLocal"),
+    });
+    if (!parsed.success) throw new UserError(parsed.error.issues[0]?.message ?? "Check the event details.");
+    await approveExternalListing(String(fd.get("listingId")), parsed.data, admin.id);
+    return "Listing approved and live on the marketplace.";
+  });
+}
+
+export async function rejectResaleAction(fd: FormData) {
+  const admin = await requireAdmin();
+  await run(fd, "/admin/resale", async () => {
+    await rejectExternalListing(String(fd.get("listingId")), String(fd.get("note") ?? ""), admin.id);
+    return "Listing rejected; the seller has been emailed.";
+  });
+}
+
+export async function adminWithdrawResaleAction(fd: FormData) {
+  const admin = await requireAdmin();
+  await run(fd, "/admin/resale?tab=active", async () => {
+    await cancelListing(String(fd.get("listingId")), admin);
+    return "Listing withdrawn.";
+  });
+}
+
+export async function markResalePayoutPaidAction(fd: FormData) {
+  const admin = await requireAdmin();
+  await run(fd, "/admin/resale?tab=payouts", async () => {
+    await markPayoutPaid(String(fd.get("payoutId")), String(fd.get("receipt") ?? ""), admin.id);
+    return "Payout recorded as paid.";
+  });
+}
+
+export async function resolveResaleDisputeAction(fd: FormData) {
+  const admin = await requireAdmin();
+  await run(fd, "/admin/resale?tab=payouts&p=disputed", async () => {
+    const note = String(fd.get("note") ?? "");
+    if (fd.get("decision") === "refund") {
+      await refundDisputedResale(String(fd.get("payoutId")), admin.id, note);
+      return "Buyer refunded; the seller's payout was cancelled.";
+    }
+    await releaseDisputedPayout(String(fd.get("payoutId")), admin.id, note);
+    return "Dispute closed in the seller's favour; the payout is back in the queue.";
   });
 }

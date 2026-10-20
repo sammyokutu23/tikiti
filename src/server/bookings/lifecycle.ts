@@ -35,6 +35,7 @@ import { queueOrganizerEmail } from "../email/notify";
 import { queueEmail } from "../email/queue";
 import { enqueueJob } from "../jobs/queue";
 import { audit } from "../audit";
+import { confirmResaleBooking } from "../resale/lifecycle";
 
 export async function lockBooking(tx: Tx, bookingId: string) {
   const [b] = await tx.select().from(bookings).where(eq(bookings.id, bookingId)).for("update");
@@ -80,6 +81,8 @@ export async function confirmBooking(tx: Tx, booking: Booking, opts: { free: boo
   if (booking.status === "refunded" || booking.status === "failed") {
     throw new Error(`Cannot confirm booking in status ${booking.status}`);
   }
+  // Resale: the ticket already exists, so no inventory, organizer ledger or new-sale email.
+  if (booking.resaleListingId) return confirmResaleBooking(tx, booking);
   const lines = await bookingLines(tx, booking.id);
   if (booking.inventoryState === "held") await commitHeldInventory(tx, lines);
   else if (booking.inventoryState === "released") await acquireSoldInventory(tx, lines);

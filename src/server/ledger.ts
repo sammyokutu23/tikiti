@@ -8,7 +8,7 @@
  *     deducted; they will be recorded as `adjustment` entries once known.
  *  5. Balances are estimates. Nothing here moves or settles money.
  */
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Tx } from "@/db";
 import { db } from "@/db";
 import { bookings, events, ledgerEntries, type Booking } from "@/db/schema";
@@ -129,6 +129,6 @@ export async function reconcileOrganizer(organizerId: string) {
     })
     .from(bookings)
     .innerJoin(events, eq(events.id, bookings.eventId))
-    .where(and(eq(events.organizerId, organizerId), inArray(bookings.status, ["confirmed", "refunded"])));
+    .where(and(eq(events.organizerId, organizerId), inArray(bookings.status, ["confirmed", "refunded"]), isNull(bookings.resaleListingId)));
   return { grossMinor: Number(snap.gross), commissionMinor: Number(snap.commission) };
 }

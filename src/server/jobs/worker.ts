@@ -2,6 +2,7 @@ import { expireStaleBookings } from "../bookings/lifecycle";
 import { scheduleEventReminders } from "../email/notify";
 import { reconcileMpesaPayments } from "../payments/mpesa";
 import { runPlanMaintenance } from "../plans/apply";
+import { closeEndedListings } from "../resale/listings";
 import { processDueJobs } from "./queue";
 
 let running = false;
@@ -22,6 +23,7 @@ export async function workerTick() {
     if (Date.now() - lastPlanScan > 60_000) {
       lastPlanScan = Date.now();
       await runPlanMaintenance().catch((err) => console.error("[worker] payment-plan maintenance failed:", (err as Error).message));
+      await closeEndedListings().catch((err) => console.error("[worker] resale listing maintenance failed:", (err as Error).message));
     }
     for (let i = 0; i < 5; i++) {
       const r = await processDueJobs(10);
