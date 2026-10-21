@@ -3,23 +3,30 @@ import { Search, SlidersHorizontal } from "lucide-react";
 import { CATEGORIES } from "@/server/events/queries";
 import { cn } from "@/lib/utils";
 
-/** White pill search with a teal filter button. Plain GET form — works without JS. */
+/** Dark pill search edged in a sun → red gradient glow. Plain GET form — works without JS. */
 export function SearchPill({ defaultValue, className }: { defaultValue?: string; className?: string }) {
   return (
-    <form action="/events" role="search" className={cn("relative", className)}>
+    <form
+      action="/events"
+      role="search"
+      className={cn(
+        "relative rounded-full bg-gradient-to-r from-sun via-teal to-coral p-[1.5px] shadow-[0_0_28px_-6px] shadow-coral/60",
+        className,
+      )}
+    >
       <label htmlFor="q-pill" className="sr-only">Search events</label>
-      <Search className="pointer-events-none absolute left-5 top-1/2 size-[22px] -translate-y-1/2 text-teal" aria-hidden />
+      <Search className="pointer-events-none absolute left-6 top-1/2 z-10 size-5 -translate-y-1/2 text-sun" aria-hidden />
       <input
         id="q-pill"
         name="q"
         defaultValue={defaultValue}
         placeholder="Search events, artists, venues…"
-        className="h-16 w-full rounded-full border border-line bg-bg-elevated pl-14 pr-20 text-base shadow-lg shadow-black/5 placeholder:text-muted focus:border-teal/50 focus:outline-none"
+        className="h-16 w-full rounded-full bg-bg/90 pl-14 pr-16 text-base text-fg backdrop-blur-md placeholder:text-muted focus:bg-bg focus:outline-none"
       />
       <Link
         href="/events#filters"
         aria-label="Filters"
-        className="absolute right-2 top-1/2 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-fg shadow-md shadow-primary/30 transition hover:brightness-110"
+        className="absolute right-3 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full text-fg/80 transition hover:bg-fg/10 hover:text-fg"
       >
         <SlidersHorizontal className="size-5" aria-hidden />
       </Link>

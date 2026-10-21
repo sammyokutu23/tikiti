@@ -1,33 +1,53 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, Flame, MapPin, Ticket } from "lucide-react";
+import { ArrowRight, ChevronDown, MapPin, Ticket } from "lucide-react";
 import { CategoryChips } from "@/components/events/category-chips";
 import { CATEGORY_STYLE, CHIP_TONE } from "@/components/events/category-style";
 import { EventCard, EventRow, FeaturedEventCard } from "@/components/events/event-card";
 import { SearchPill } from "@/components/events/search-bar";
-import { Spark, Underline } from "@/components/site/doodles";
 import { HomeStory } from "@/components/site/story";
 import { EmptyState, Section } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { CATEGORIES, searchPublicEvents } from "@/server/events/queries";
 
-const HERO_IMAGE = "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=1600&q=75";
+const HERO_IMAGE = "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1600&q=75";
 
 /**
- * Concert photo cut on a slant, edged by clean parallel stripes (sun, teal, coral)
- * instead of paint splashes. Decorative only.
+ * Full-bleed concert crowd washed in red stage light, darkened on the left so the
+ * headline reads, with a sweeping sun-to-orange light trail. Decorative only.
  */
 function HeroArt() {
   return (
-    <div className="pointer-events-none absolute right-0 top-0 h-[290px] w-[44%] sm:h-[440px] lg:h-[510px] lg:w-[50%]" aria-hidden>
-      <div className="absolute inset-0 bg-coral [clip-path:polygon(17%_0,18.5%_0,-1.5%_100%,-3%_100%)]" />
-      <div className="absolute inset-0 bg-teal [clip-path:polygon(21.5%_0,24%_0,4%_100%,1.5%_100%)]" />
-      <div className="absolute inset-0 bg-sun [clip-path:polygon(27%_0,31%_0,11%_100%,7%_100%)]" />
-      <div className="absolute inset-0 [clip-path:polygon(34%_0,100%_0,100%_100%,14%_100%)]">
-        <Image src={HERO_IMAGE} alt="" fill sizes="(min-width: 1024px) 50vw, 46vw" className="object-cover object-[60%_center]" preload />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-      </div>
+    <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden>
+      <Image src={HERO_IMAGE} alt="" fill sizes="100vw" className="object-cover object-[75%_30%]" preload />
+      <div className="absolute inset-0 bg-[#e8402a] mix-blend-multiply" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#0b0908] via-[#0b0908]/65 to-transparent sm:via-[#0b0908]/45" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0b0908]/50 via-transparent via-70% to-[#0b0908]" />
+      <svg viewBox="0 0 800 700" preserveAspectRatio="none" className="absolute inset-y-0 right-0 hidden h-full w-[62%] xl:block" fill="none">
+        <defs>
+          <linearGradient id="hero-trail" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#ffc53d" />
+            <stop offset="1" stopColor="#ff8a2a" stopOpacity="0.85" />
+          </linearGradient>
+        </defs>
+        <path d="M60 -20C150 230 290 380 500 450" stroke="url(#hero-trail)" strokeWidth="30" strokeLinecap="round" opacity="0.8" />
+      </svg>
     </div>
+  );
+}
+
+/** Hand-drawn swoosh under "Shika Ticket!". Decorative only. */
+function Swoosh({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 420 16" preserveAspectRatio="none" className={className} fill="none" aria-hidden>
+      <defs>
+        <linearGradient id="hero-swoosh" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#ff8a2a" />
+          <stop offset="1" stopColor="#f2482f" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d="M3 13C120 4 270 2 417 6" stroke="url(#hero-swoosh)" strokeWidth="4" strokeLinecap="round" />
+    </svg>
   );
 }
 
@@ -41,52 +61,39 @@ export default async function HomePage() {
 
   return (
     <>
-      <section className="relative isolate overflow-hidden">
+      <section className="theme-dark relative isolate overflow-hidden text-fg">
         <HeroArt />
-        <div className="relative mx-auto max-w-7xl space-y-6 px-4 pb-4 pt-5 sm:space-y-8 sm:px-6 sm:pt-12">
-          <div className="flex items-start gap-2">
-            <MapPin className="mt-1 size-5 shrink-0 text-teal sm:hidden" aria-hidden />
+        <div className="relative mx-auto max-w-7xl space-y-6 px-4 pb-10 pt-8 sm:space-y-8 sm:px-6 sm:pb-16 sm:pt-14">
+          <div className="flex items-start gap-3">
+            <MapPin className="mt-1 size-5 shrink-0 text-sun" aria-hidden />
             <div>
-              <p className="text-sm text-fg/80">Discover in</p>
-              <Link href="/events?city=Nairobi" className="inline-flex items-center gap-1 text-xl font-bold sm:text-2xl">
-                Nairobi, Kenya <ChevronDown className="size-5" aria-hidden />
+              <p className="text-sm text-fg/75">Discover in</p>
+              <Link href="/events?city=Nairobi" className="inline-flex items-center gap-1 text-lg font-semibold sm:text-xl">
+                Nairobi, Kenya <ChevronDown className="size-4" aria-hidden />
               </Link>
             </div>
           </div>
-          <div className="space-y-3">
-            <h1 className="relative z-10 text-[2.4rem] font-extrabold leading-[1.05] tracking-tight sm:text-7xl">
-              FOMO Si <br className="sm:hidden" />
-              Lazima,
-              <span className="relative isolate mt-1 flex w-fit items-center sm:mt-2">
-                <Spark className="absolute -left-4 top-1/2 size-4 -translate-y-1/2 -rotate-90 text-fg sm:-left-8 sm:size-7" />
-                <span className="absolute -inset-x-2 bottom-[0.18em] top-[0.42em] -z-10 -rotate-1 rounded-lg bg-sun" aria-hidden />
-                <span className="font-script text-[1.15em] font-bold sm:text-[1.3em] leading-[0.95] tracking-normal text-[#0b6b60]">Shika Ticket!</span>
-                <Spark className="ml-2 hidden size-8 rotate-180 text-teal sm:block" />
+          <div className="space-y-4">
+            <h1 className="text-[2.6rem] font-extrabold leading-[1.05] tracking-tight sm:text-7xl">
+              FOMO Si Lazima,
+              <span className="relative mt-1 block w-fit pb-3 sm:mt-2">
+                <span className="bg-gradient-to-r from-sun via-teal to-coral bg-clip-text pr-2 italic text-transparent">Shika Ticket!</span>
+                <Swoosh className="absolute -left-1 bottom-0 h-3 w-[105%]" />
               </span>
             </h1>
-            <p className="ml-[22%] flex w-fit -rotate-6 flex-col font-script text-2xl font-bold text-teal sm:ml-[34%] sm:text-3xl">
-              <span>Plans za leo?</span>
-              <Underline className="-mt-1 text-teal" />
-            </p>
-            <p className="hidden max-w-xl text-lg text-muted sm:block">
+            <p className="max-w-xl text-base text-fg/80 sm:text-lg">
               Concerts, festivals, parties, conferences, workshops and more — all in one place.
             </p>
           </div>
-          <SearchPill className="relative z-10 max-w-3xl" />
-          <div className="relative">
-            <Spark className="absolute -left-7 -top-3 hidden size-6 -rotate-45 text-fg sm:block" />
-            <CategoryChips />
-          </div>
+          <SearchPill className="max-w-3xl" />
+          <CategoryChips />
         </div>
       </section>
 
       <div className="mx-auto max-w-7xl space-y-12 px-4 pb-8 pt-8 sm:space-y-16 sm:px-6 sm:pt-12">
         <Section
           title={
-            <span className="flex items-center gap-2 text-2xl font-extrabold sm:text-[1.75rem]">
-              <Flame className="size-7 fill-coral text-coral" aria-hidden />
-              Featured
-            </span>
+            <span className="text-2xl font-extrabold sm:text-[1.75rem]">Featured</span>
           }
           action={
             <Link href="/events" className="inline-flex items-center gap-1.5 text-base font-semibold text-teal hover:text-teal/80">
@@ -97,9 +104,9 @@ export default async function HomePage() {
           {hero.length === 0 ? (
             <EmptyState icon={<Ticket className="size-6" />} title="No events yet" body="Check back soon — organizers are adding new events every week." />
           ) : (
-            <div className="scrollbar-none relative -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 lg:grid-cols-3">
+            <div className="scrollbar-none relative -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:-mx-6 sm:gap-5 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0">
               {hero.map((e, i) => (
-                <div key={e.id} className="w-[86%] shrink-0 snap-center sm:w-auto">
+                <div key={e.id} className="w-[86%] shrink-0 snap-center sm:w-[46%] lg:w-auto">
                   <FeaturedEventCard event={e} priority={i === 0} />
                 </div>
               ))}
@@ -127,11 +134,11 @@ export default async function HomePage() {
                 <Link
                   key={c.value}
                   href={`/events?category=${c.value}`}
-                  className="group flex items-center gap-3 rounded-3xl border border-line bg-surface/70 p-4 transition hover:border-teal/40 hover:bg-surface"
+                  className="group flex items-center gap-3 rounded-3xl border border-line bg-surface/70 p-4 transition hover:border-sun/40 hover:bg-surface"
                 >
                   <span
                     className={cn(
-                      "flex size-11 items-center justify-center rounded-2xl transition group-hover:bg-primary group-hover:text-primary-fg",
+                      "flex size-11 items-center justify-center rounded-2xl bg-surface-2 transition group-hover:bg-primary group-hover:text-primary-fg",
                       CHIP_TONE[tone],
                     )}
                   >

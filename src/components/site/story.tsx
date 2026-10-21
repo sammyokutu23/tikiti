@@ -1,7 +1,7 @@
 import { MessageCircle, QrCode, Repeat, Smartphone } from "lucide-react";
 import { ButtonLink } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { Spark, Underline } from "./doodles";
+import { Underline } from "./doodles";
 
 const CHAPTERS = [
   {
@@ -53,7 +53,6 @@ export function HomeStory() {
       </div>
 
       <ol className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Spark className="absolute -right-2 -top-6 hidden size-7 rotate-180 text-coral lg:block" />
         {CHAPTERS.map((c, i) => (
           <li key={c.title} className="relative flex flex-col gap-3 rounded-3xl border border-line bg-surface/70 p-5">
             <div className="flex items-center justify-between">

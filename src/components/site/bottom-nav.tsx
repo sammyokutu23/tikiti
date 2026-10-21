@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass, House, Repeat, Ticket, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Spark } from "./doodles";
 
 const side = [
   [
@@ -42,7 +41,6 @@ export function BottomNav() {
       <ul className="glass-nav flex w-full max-w-md items-center rounded-[2rem] border border-line px-2 shadow-2xl shadow-black/15">
         {side[0].map(tab)}
         <li className="relative -mt-8 flex flex-1 justify-center">
-          <Spark className="absolute -right-1 -top-3 size-5 rotate-90 text-teal" />
           <Link
             href="/account"
             aria-label="My tickets"

@@ -76,13 +76,14 @@ export function FeaturedEventCard({ event, priority = false }: { event: EventCar
         <EventImage src={event.coverImageUrl} alt="" width={900} preload={priority} className="aspect-[16/9] transition duration-500 group-hover:scale-[1.03]" />
         <CategoryBadge category={event.category} className="absolute left-4 top-4" />
         <DateBadge date={event.startsAt} tz={event.timezone} className="absolute right-4 top-4" />
-        <span className="absolute bottom-3 left-4 -rotate-6 rounded-md bg-[#f7b731] px-2.5 py-0.5 font-script text-lg font-bold text-[#14171a] shadow-md shadow-black/30">
+        <span className="absolute bottom-3 left-4 -rotate-6 rounded-md bg-[#ffc53d] px-2.5 py-0.5 font-script text-lg font-bold text-[#1d1300] shadow-md shadow-black/30">
           #{event.city.replace(/\s+/g, "")}Vibes
         </span>
       </div>
-      <div className="space-y-2 p-4 sm:p-5">
+      {/* Narrow cards (phones) put Get Tickets on its own full-width row. */}
+      <div className="@container space-y-2 p-4 sm:p-5">
         <h3 className="line-clamp-1 text-lg font-bold tracking-tight sm:text-xl">{event.title}</h3>
-        <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-col gap-3 @[22rem]:flex-row @[22rem]:items-end @[22rem]:justify-between">
           <div className="min-w-0 space-y-1.5 text-sm text-white/85">
             <p className="flex items-center gap-1.5 truncate">
               <MapPin className="size-4 shrink-0" aria-hidden />
@@ -90,7 +91,7 @@ export function FeaturedEventCard({ event, priority = false }: { event: EventCar
                 {event.venueName}, {event.city}
               </span>
             </p>
-            <p className="flex items-center gap-1.5">
+            <p className="flex items-center gap-1.5 whitespace-nowrap">
               <Clock className="size-4 shrink-0" aria-hidden />
               <PriceFrom minPriceMinor={event.minPriceMinor} />
               <span aria-hidden>·</span>
@@ -100,7 +101,7 @@ export function FeaturedEventCard({ event, priority = false }: { event: EventCar
           </div>
           <span
             className={cn(
-              "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition",
+              "inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full px-4 text-sm font-semibold transition",
               soldOut ? "bg-white/15 text-white/80" : "bg-[#f25f3a] text-white group-hover:bg-[#e14f2b]",
             )}
           >

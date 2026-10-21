@@ -23,3 +23,12 @@ export const clerkAppearance = {
     socialButtonsBlockButton: "rounded-full",
   },
 };
+
+/**
+ * Clerk wording overrides. Its default titles use the Clerk application name,
+ * which still says "tikiti" in the dashboard, so the brand is set here instead.
+ */
+export const clerkLocalization = {
+  signIn: { start: { title: "Sign in to TikoSoko", titleCombined: "Continue to TikoSoko" } },
+  signUp: { start: { title: "Create your TikoSoko account", titleCombined: "Continue to TikoSoko" } },
+};

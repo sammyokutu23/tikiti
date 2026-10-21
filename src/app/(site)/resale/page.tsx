@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { BadgeCheck, Repeat, Search, ShieldCheck, Tag, Wallet } from "lucide-react";
 import { ResaleListingCard } from "@/components/resale/listing-card";
-import { Spark } from "@/components/site/doodles";
 import { ButtonLink, EmptyState } from "@/components/ui";
 import { marketplaceListings } from "@/server/resale/listings";
 
@@ -46,7 +45,7 @@ export default async function ResaleMarketplacePage({ searchParams }: PageProps<
           { icon: Wallet, title: "Sellers are paid after the event", body: "If a ticket doesn't work, report it and you're refunded in full." },
         ].map(({ icon: Icon, title, body }) => (
           <div key={title} className="flex gap-3 rounded-3xl border border-line bg-surface/70 p-4">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-mint text-[#0b3d36]">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-mint text-[#3a2500]">
               <Icon className="size-5" aria-hidden />
             </span>
             <div>
@@ -59,9 +58,7 @@ export default async function ResaleMarketplacePage({ searchParams }: PageProps<
 
       <section className="space-y-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="flex items-center gap-2 text-2xl font-extrabold">
-            <Spark className="size-6 text-coral" /> Tickets for sale
-          </h2>
+          <h2 className="text-2xl font-extrabold">Tickets for sale</h2>
           <form action="/resale" role="search" className="relative w-full sm:w-80">
             <label htmlFor="rq" className="sr-only">Search resale tickets</label>
             <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-teal" aria-hidden />

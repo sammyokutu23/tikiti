@@ -2,6 +2,7 @@ import { LayoutDashboard, Repeat, Shield, Ticket, User } from "lucide-react";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import type { User as UserT } from "@/db/schema";
 import { buttonClasses } from "@/components/ui";
+import { cn } from "@/lib/utils";
 import type { Theme } from "@/lib/theme";
 import { Logo } from "./logo";
 import { NavLinks } from "./nav-links";
@@ -13,7 +14,7 @@ export function SiteHeader({ user, hasOrganizerProfile, theme }: { user: UserT |
   const orgHref = hasOrganizerProfile ? "/organizer" : "/organizer/apply";
   return (
     <header className="theme-dark sticky top-0 z-30 bg-bg/95 text-fg backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-8 px-4 sm:h-[72px] sm:px-6">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:h-[72px] sm:gap-8 sm:px-6">
         <Logo />
         <NavLinks
           items={[
@@ -24,11 +25,12 @@ export function SiteHeader({ user, hasOrganizerProfile, theme }: { user: UserT |
             ...(user?.role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
           ]}
         />
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1 sm:gap-2">
           <ThemeToggle initial={theme} />
           <Show when="signed-out">
             <SignInButton mode="redirect">
-              <button className={buttonClasses("ghost", "sm")}>Sign in</button>
+              {/* Narrow phones: sign-in stays reachable from the bottom bar's Profile tab. */}
+              <button className={cn(buttonClasses("ghost", "sm"), "max-[399px]:hidden")}>Sign in</button>
             </SignInButton>
             <SignUpButton mode="redirect">
               <button className={buttonClasses("primary", "sm")}>Sign up</button>

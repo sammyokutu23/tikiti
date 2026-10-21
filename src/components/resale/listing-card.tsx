@@ -23,7 +23,7 @@ export type ListingCardData = Awaited<ReturnType<typeof marketplaceListings>>[nu
 /** "Verified TikoSoko ticket" or "Outside ticket · reviewed" pill. */
 export function ResaleTrustBadge({ kind, className }: { kind: "platform" | "external"; className?: string }) {
   return kind === "platform" ? (
-    <span className={cn("inline-flex items-center gap-1 rounded-full bg-mint px-2.5 py-1 text-xs font-semibold text-[#0b3d36]", className)}>
+    <span className={cn("inline-flex items-center gap-1 rounded-full bg-mint px-2.5 py-1 text-xs font-semibold text-[#3a2500]", className)}>
       <BadgeCheck className="size-3.5" aria-hidden /> Verified TikoSoko ticket
     </span>
   ) : (

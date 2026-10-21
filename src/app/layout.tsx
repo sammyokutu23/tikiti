@@ -1,5 +1,5 @@
 import { ClerkProvider } from "@clerk/nextjs";
-import { clerkAppearance } from "@/lib/clerk-appearance";
+import { clerkAppearance, clerkLocalization } from "@/lib/clerk-appearance";
 import type { Metadata, Viewport } from "next";
 import { cookies } from "next/headers";
 import { Caveat, Geist, Geist_Mono } from "next/font/google";
@@ -20,8 +20,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0f1316" },
-    { media: "(prefers-color-scheme: light)", color: "#f7f2e8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0908" },
+    { media: "(prefers-color-scheme: light)", color: "#faf5ee" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -40,7 +40,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <ClerkProvider appearance={clerkAppearance}>
+        <ClerkProvider appearance={clerkAppearance} localization={clerkLocalization}>
           <a href="#main" className="sr-only z-50 rounded-full bg-primary px-4 py-2 text-primary-fg focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
           Skip to content
           </a>

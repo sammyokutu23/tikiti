@@ -1,9 +1,10 @@
 @import "tailwindcss";
 
 /*
- * TikoSoko design tokens ("Plans za leo?"). Light: warm cream canvas, teal
- * primary actions, coral / sun / mint accents and clean stripe lines.
- * Dark: the same palette on a deep blue-black canvas.
+ * TikoSoko design tokens ("FOMO Si Lazima"). Dark (default): warm near-black
+ * canvas, sun-yellow primary actions and an orange → red concert-light accent.
+ * Light: the same palette on a warm cream canvas. (`teal` is the accent token
+ * name kept from the earlier palette; it now holds the orange.)
  *
  * Theme choice: <html data-theme="light|dark"> (from the tikosoko-theme cookie);
  * without the attribute the visitor's OS preference decides. `.theme-dark`
@@ -11,107 +12,107 @@
  */
 :root,
 .theme-dark {
-  --bg: #0f1316;
-  --bg-elevated: #171c20;
-  --surface: #181d21;
-  --surface-2: #20272c;
-  --surface-3: #2a3238;
-  --line: rgb(255 255 255 / 0.08);
-  --line-strong: rgb(255 255 255 / 0.16);
-  --fg: #f5f0e6;
-  --fg-muted: #a7adb2;
-  --fg-subtle: #737a80;
-  --primary: #2bb5a3;
-  --primary-fg: #06201c;
+  --bg: #0b0908;
+  --bg-elevated: #151110;
+  --surface: #171312;
+  --surface-2: #211b19;
+  --surface-3: #2c2421;
+  --line: rgb(255 255 255 / 0.09);
+  --line-strong: rgb(255 255 255 / 0.18);
+  --fg: #f7f3ee;
+  --fg-muted: #b0a8a2;
+  --fg-subtle: #7a716b;
+  --primary: #ffc53d;
+  --primary-fg: #1d1300;
   --success: #4ade80;
   --warning: #fbbf24;
   --danger: #f87171;
   --info: #93c5fd;
-  --teal: #2bb5a3;
-  --coral: #f46a45;
-  --sun: #f7b731;
-  --mint: #c4e8df;
-  --glow: rgb(43 181 163 / 0.08);
-  --glow-2: rgb(247 183 49 / 0.05);
-  --nav-glass: rgb(23 28 32 / 0.92);
+  --teal: #ff8a2a;
+  --coral: #f2482f;
+  --sun: #ffc53d;
+  --mint: #ffe2a8;
+  --glow: rgb(242 72 47 / 0.08);
+  --glow-2: rgb(255 197 61 / 0.05);
+  --nav-glass: rgb(21 17 16 / 0.92);
   --shimmer: rgb(255 255 255 / 0.05);
-  /* TikoSoko logo on dark: cream ink, coral cart, teal ticket. */
+  /* TikoSoko logo on dark: white ink, red cart, sun ticket. */
   --brand-ink: #ffffff;
-  --brand-accent: #f46a45;
-  --brand-cart: #f46a45;
-  --brand-ticket: #2bb5a3;
+  --brand-accent: #ff8a2a;
+  --brand-cart: #f2482f;
+  --brand-ticket: #ffc53d;
   --brand-check: #ffffff;
-  --brand-wheel: #f5f0e6;
+  --brand-wheel: #f7f3ee;
   color-scheme: dark;
 }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
-    --bg: #f7f2e8;
+    --bg: #faf5ee;
     --bg-elevated: #ffffff;
     --surface: #ffffff;
-    --surface-2: #efe8da;
-    --surface-3: #e4dbc9;
-    --line: rgb(20 23 26 / 0.09);
-    --line-strong: rgb(20 23 26 / 0.18);
-    --fg: #14171a;
-    --fg-muted: #5a5f64;
-    --fg-subtle: #8a8f94;
-    --primary: #0f7f72;
-    --primary-fg: #ffffff;
+    --surface-2: #f1e9de;
+    --surface-3: #e6dccd;
+    --line: rgb(23 17 14 / 0.09);
+    --line-strong: rgb(23 17 14 / 0.18);
+    --fg: #17110e;
+    --fg-muted: #5f5650;
+    --fg-subtle: #8f8680;
+    --primary: #ffbb1f;
+    --primary-fg: #1d1300;
     --success: #15803d;
     --warning: #b45309;
     --danger: #dc2626;
     --info: #1d4ed8;
-    --teal: #0f7f72;
-    --coral: #f25f3a;
-    --sun: #f7b731;
-    --mint: #c4e8df;
-    --glow: rgb(15 127 114 / 0.05);
-    --glow-2: rgb(247 183 49 / 0.06);
+    --teal: #c2410c;
+    --coral: #e0381f;
+    --sun: #ffbb1f;
+    --mint: #ffe2a8;
+    --glow: rgb(224 56 31 / 0.05);
+    --glow-2: rgb(255 187 31 / 0.07);
     --nav-glass: rgb(255 255 255 / 0.9);
     --shimmer: rgb(0 0 0 / 0.05);
-    --brand-ink: #14171a;
-    --brand-accent: #f25f3a;
-    --brand-cart: #f25f3a;
-    --brand-ticket: #0f7f72;
+    --brand-ink: #17110e;
+    --brand-accent: #e0381f;
+    --brand-cart: #e0381f;
+    --brand-ticket: #f59e0b;
     --brand-check: #ffffff;
-    --brand-wheel: #14171a;
+    --brand-wheel: #17110e;
     color-scheme: light;
   }
 }
 
 :root[data-theme="light"] {
-  --bg: #f7f2e8;
+  --bg: #faf5ee;
   --bg-elevated: #ffffff;
   --surface: #ffffff;
-  --surface-2: #efe8da;
-  --surface-3: #e4dbc9;
-  --line: rgb(20 23 26 / 0.09);
-  --line-strong: rgb(20 23 26 / 0.18);
-  --fg: #14171a;
-  --fg-muted: #5a5f64;
-  --fg-subtle: #8a8f94;
-  --primary: #0f7f72;
-  --primary-fg: #ffffff;
+  --surface-2: #f1e9de;
+  --surface-3: #e6dccd;
+  --line: rgb(23 17 14 / 0.09);
+  --line-strong: rgb(23 17 14 / 0.18);
+  --fg: #17110e;
+  --fg-muted: #5f5650;
+  --fg-subtle: #8f8680;
+  --primary: #ffbb1f;
+  --primary-fg: #1d1300;
   --success: #15803d;
   --warning: #b45309;
   --danger: #dc2626;
   --info: #1d4ed8;
-  --teal: #0f7f72;
-  --coral: #f25f3a;
-  --sun: #f7b731;
-  --mint: #c4e8df;
-  --glow: rgb(15 127 114 / 0.05);
-  --glow-2: rgb(247 183 49 / 0.06);
+  --teal: #c2410c;
+  --coral: #e0381f;
+  --sun: #ffbb1f;
+  --mint: #ffe2a8;
+  --glow: rgb(224 56 31 / 0.05);
+  --glow-2: rgb(255 187 31 / 0.07);
   --nav-glass: rgb(255 255 255 / 0.9);
   --shimmer: rgb(0 0 0 / 0.05);
-  --brand-ink: #14171a;
-  --brand-accent: #f25f3a;
-  --brand-cart: #f25f3a;
-  --brand-ticket: #0f7f72;
+  --brand-ink: #17110e;
+  --brand-accent: #e0381f;
+  --brand-cart: #e0381f;
+  --brand-ticket: #f59e0b;
   --brand-check: #ffffff;
-  --brand-wheel: #14171a;
+  --brand-wheel: #17110e;
   color-scheme: light;
 }
 

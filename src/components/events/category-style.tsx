@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 type Tone = "mint" | "coral" | "sun" | "plain";
 
-/** Icon and colour per category; the colours cycle mint / coral / sun / plain. */
+/** Icon and colour per category; the colours cycle red / sun / orange / plain. */
 export const CATEGORY_STYLE: Record<string, { icon: LucideIcon; tone: Tone }> = {
   music: { icon: Music, tone: "mint" },
   festival: { icon: Tent, tone: "coral" },
@@ -17,20 +17,20 @@ export const CATEGORY_STYLE: Record<string, { icon: LucideIcon; tone: Tone }> = 
   arts: { icon: Palette, tone: "plain" },
 };
 
-/** Soft fills for chips and tiles on the page canvas. */
+/** Icon colour for chips and tiles; the chip itself stays dark glass. */
 export const CHIP_TONE: Record<Tone, string> = {
-  mint: "bg-mint text-[#0b3d36]",
-  coral: "bg-coral text-white",
-  sun: "bg-sun text-[#2a1d00]",
-  plain: "bg-surface-2 text-fg",
+  mint: "text-coral",
+  coral: "text-sun",
+  sun: "text-teal",
+  plain: "text-coral",
 };
 
 /** Solid fills for badges sitting on photos. */
 const BADGE_TONE: Record<Tone, string> = {
-  mint: "bg-[#0f7f72] text-white",
-  coral: "bg-[#f25f3a] text-white",
-  sun: "bg-[#f7b731] text-[#2a1d00]",
-  plain: "bg-white text-[#14171a]",
+  mint: "bg-[#f2482f] text-white",
+  coral: "bg-[#ffc53d] text-[#1d1300]",
+  sun: "bg-[#ff8a2a] text-[#1d1300]",
+  plain: "bg-white text-[#17110e]",
 };
 
 /** Category pill for photo cards. */
