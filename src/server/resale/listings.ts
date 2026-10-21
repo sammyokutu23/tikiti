@@ -2,7 +2,7 @@
  * Resale listings: TikoSoko tickets (verified, reissued to the buyer on sale) and
  * tickets bought on other platforms (reviewed by an admin before going live).
  */
-import { and, desc, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, ilike, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, type Tx } from "@/db";
 import {
@@ -26,6 +26,7 @@ import { isUniqueViolation, UserError } from "@/lib/errors";
 import { normalizeKenyanPhone, slugify } from "@/lib/utils";
 import { audit } from "../audit";
 import { queueEmail } from "../email/queue";
+import { type EventSearch, isCategory, searchDateRange } from "../events/queries";
 import type { ResaleUpload } from "./documents";
 import { MAX_RESALE_PRICE_KES, MIN_RESALE_PRICE_KES } from "./policy";
 
@@ -405,19 +406,30 @@ function buyableWhere() {
   );
 }
 
-export async function marketplaceListings(filter: { eventId?: string; q?: string; limit?: number } = {}) {
+export async function marketplaceListings(
+  filter: { eventId?: string; q?: string; limit?: number; newest?: boolean } & Pick<EventSearch, "category" | "city" | "when" | "date"> = {},
+) {
   const conds = [buyableWhere()];
   if (filter.eventId) conds.push(eq(resaleListings.eventId, filter.eventId));
+  if (filter.category && isCategory(filter.category)) conds.push(eq(events.category, filter.category));
+  if (filter.city?.trim()) conds.push(ilike(events.city, filter.city.trim()));
+  const range = searchDateRange(filter);
+  if (range) conds.push(lt(events.startsAt, range.end), gt(events.endsAt, range.start));
+  const q = filter.q?.trim().toLowerCase();
+  const limit = filter.limit ?? 120;
+  // "Newest" means newest on sale: outside tickets go live when an admin approves them.
+  const order = filter.newest
+    ? [desc(sql`coalesce(${resaleListings.reviewedAt}, ${resaleListings.createdAt})`)]
+    : [events.startsAt, resaleListings.priceMinor];
   const rows = await db
     .select(listingCard)
     .from(resaleListings)
     .innerJoin(events, eq(events.id, resaleListings.eventId))
     .leftJoin(tickets, eq(tickets.id, resaleListings.ticketId))
     .where(and(...conds))
-    .orderBy(events.startsAt, resaleListings.priceMinor)
-    .limit(filter.limit ?? 120);
-  const q = filter.q?.trim().toLowerCase();
-  return q ? rows.filter((r) => `${r.event.title} ${r.event.venueName} ${r.event.city} ${r.listing.ticketTypeName}`.toLowerCase().includes(q)) : rows;
+    .orderBy(...order)
+    .limit(q ? 120 : limit);
+  return q ? rows.filter((r) => `${r.event.title} ${r.event.venueName} ${r.event.city} ${r.listing.ticketTypeName}`.toLowerCase().includes(q)).slice(0, limit) : rows;
 }
 
 export async function getBuyableListing(reference: string) {

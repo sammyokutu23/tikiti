@@ -1,14 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ChevronDown, MapPin, Ticket } from "lucide-react";
+import { ArrowRight, ChevronDown, MapPin, Repeat, Ticket } from "lucide-react";
 import { CategoryChips } from "@/components/events/category-chips";
 import { CATEGORY_STYLE, CHIP_TONE } from "@/components/events/category-style";
 import { EventCard, EventRow, FeaturedEventCard } from "@/components/events/event-card";
+import { ResaleListingCard } from "@/components/resale/listing-card";
 import { SearchPill } from "@/components/events/search-bar";
 import { HomeStory } from "@/components/site/story";
 import { EmptyState, Section } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { CATEGORIES, searchPublicEvents } from "@/server/events/queries";
+import { marketplaceListings } from "@/server/resale/listings";
 
 const HERO_IMAGE = "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=1600&q=75";
 
@@ -52,10 +54,11 @@ function Swoosh({ className }: { className?: string }) {
 }
 
 export default async function HomePage() {
-  const [featured, thisWeek, upcoming] = await Promise.all([
+  const [featured, thisWeek, upcoming, resale] = await Promise.all([
     searchPublicEvents({ featured: true, limit: 6 }),
     searchPublicEvents({ when: "week", limit: 4 }),
     searchPublicEvents({ limit: 9 }),
+    marketplaceListings({ newest: true, limit: 6 }),
   ]);
   const hero = featured.length ? featured : upcoming.slice(0, 3);
 
@@ -113,6 +116,27 @@ export default async function HomePage() {
             </div>
           )}
         </Section>
+
+        {resale.length > 0 && (
+          <Section
+            title={
+              <span className="inline-flex items-center gap-2 text-2xl font-extrabold sm:text-[1.75rem]">
+                <Repeat className="size-6 text-sun" aria-hidden /> Just listed for resale
+              </span>
+            }
+            action={
+              <Link href="/resale" className="inline-flex items-center gap-1.5 text-base font-semibold text-teal hover:text-teal/80">
+                See all <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            }
+          >
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {resale.map((r) => (
+                <ResaleListingCard key={r.listing.id} row={r} />
+              ))}
+            </div>
+          </Section>
+        )}
 
         <HomeStory />
 

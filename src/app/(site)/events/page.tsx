@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { SearchX } from "lucide-react";
+import { ArrowRight, Repeat, SearchX } from "lucide-react";
 import { CategoryChips } from "@/components/events/category-chips";
 import { EventCard } from "@/components/events/event-card";
 import { FilterForm } from "@/components/events/search-bar";
+import { ResaleListingCard } from "@/components/resale/listing-card";
 import { ButtonLink, EmptyState } from "@/components/ui";
 import { categoryLabel, isCategory, publicCities, searchPublicEvents } from "@/server/events/queries";
+import { marketplaceListings } from "@/server/resale/listings";
 
 export const metadata = { title: "Explore events" };
 
@@ -19,7 +21,11 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
     when: str(sp.when) as "today" | "weekend" | "week" | "month" | undefined,
     date: str(sp.date),
   };
-  const [results, cities] = await Promise.all([searchPublicEvents({ ...values, limit: 60 }), publicCities()]);
+  const [results, cities, resale] = await Promise.all([
+    searchPublicEvents({ ...values, limit: 60 }),
+    publicCities(),
+    marketplaceListings({ ...values, newest: true, limit: 6 }),
+  ]);
   const filtered = Object.values(values).some(Boolean);
   const heading = values.category ? categoryLabel(values.category) : values.q ? `Results for “${values.q}”` : "All events";
 
@@ -34,6 +40,23 @@ export default async function EventsPage({ searchParams }: PageProps<"/events">)
       </div>
       <FilterForm values={values} cities={cities} />
       <CategoryChips active={values.category} extra={{ q: values.q, city: values.city, when: values.when, date: values.date }} />
+      {resale.length > 0 && (
+        <section className="space-y-4 rounded-[2rem] border border-sun/25 bg-surface/70 p-4 sm:p-6" aria-labelledby="resale-heading">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="resale-heading" className="inline-flex items-center gap-2 text-xl font-extrabold sm:text-2xl">
+              <Repeat className="size-5 text-sun" aria-hidden /> Resale tickets
+            </h2>
+            <Link href={values.q ? `/resale?q=${encodeURIComponent(values.q)}` : "/resale"} className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal hover:text-teal/80">
+              See all <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {resale.map((r) => (
+              <ResaleListingCard key={r.listing.id} row={r} />
+            ))}
+          </div>
+        </section>
+      )}
       {results.length === 0 ? (
         <EmptyState
           icon={<SearchX className="size-6" />}

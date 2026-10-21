@@ -106,6 +106,11 @@ function whenRange(when: EventSearch["when"], now = new Date()): { start: Date; 
   }
 }
 
+/** The window an events search covers: a picked date wins over a "when" preset. */
+export function searchDateRange(s: Pick<EventSearch, "when" | "date">) {
+  return s.date && /^\d{4}-\d{2}-\d{2}$/.test(s.date) ? nairobiDayBounds(s.date) : whenRange(s.when);
+}
+
 export async function searchPublicEvents(s: EventSearch = {}): Promise<EventCard[]> {
   const now = new Date();
   const conds: SQL[] = [publicEventWhere(), gt(events.endsAt, now)];
@@ -123,13 +128,8 @@ export async function searchPublicEvents(s: EventSearch = {}): Promise<EventCard
   }
   if (s.category && isCategory(s.category)) conds.push(eq(events.category, s.category));
   if (s.city?.trim()) conds.push(ilike(events.city, s.city.trim()));
-  if (s.date && /^\d{4}-\d{2}-\d{2}$/.test(s.date)) {
-    const { start, end } = nairobiDayBounds(s.date);
-    conds.push(lt(events.startsAt, end), gt(events.endsAt, start));
-  } else {
-    const r = whenRange(s.when);
-    if (r) conds.push(lt(events.startsAt, r.end), gt(events.endsAt, r.start));
-  }
+  const r = searchDateRange(s);
+  if (r) conds.push(lt(events.startsAt, r.end), gt(events.endsAt, r.start));
   if (s.featured) conds.push(eq(events.isFeatured, true));
 
   return db
