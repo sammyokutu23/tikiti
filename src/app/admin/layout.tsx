@@ -2,6 +2,9 @@ import { DashShell } from "@/components/dash/shell";
 import { Badge } from "@/components/ui";
 import { requireAdmin } from "@/server/auth/guards";
 
+// Staff pages are per-user and read the database; never try to prerender them at build time.
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
   return (
