@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/organizer/**": ["./assets/fonts/**"],
     "/api/organizer/**": ["./assets/fonts/**"],
+    // Approving an outside resale ticket makes the event's AI banner (src/server/resale/banner.ts).
+    "/admin/**": ["./assets/fonts/**"],
   },
   images: {
     // Event images are served pre-sized (Unsplash params / uploaded files).

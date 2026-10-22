@@ -12,6 +12,8 @@ import { resetRateLimits } from "@/lib/rate-limit";
 import { imageApiConfig, imageApiStatus, setImageGeneratorOverride, type ImageGenerator } from "@/server/banners/openai";
 import { buildBannerPrompt, generateBannerSchema } from "@/server/banners/prompt";
 import { DEFAULT_BANNER_LIMITS, generateEventBanners, renderBanner, saveBannerAsCover, setBannerLimits } from "@/server/banners/service";
+import { approveExternalListing, createExternalListing } from "@/server/resale/listings";
+import { ensureOutsideEventBanner } from "@/server/resale/banner";
 import { makeEvent, makeOrganizer, makeUser, resetDb } from "./helpers";
 
 const FAKE_KEY = "sk-test-0123456789abcdefghijklmnop";
@@ -184,5 +186,47 @@ describe("composition & saving", () => {
     expect((await db.select().from(events).where(eq(events.id, ev.id)))[0].coverImageUrl).toBe(url);
     const [a] = await db.select().from(auditLogs).where(eq(auditLogs.action, "event.cover_set_from_ai"));
     expect(a.metadata).toMatchObject({ previousCoverUrl: "/media/events/original.jpg", newCoverUrl: url });
+  });
+});
+
+describe("outside resale event banners", () => {
+  const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(2000)]);
+  const local = (days: number, h: number) => new Date(Date.now() + days * 86_400_000 + h * 3600_000).toISOString().slice(0, 16);
+
+  async function submit(seller: { id: string }) {
+    return createExternalListing(
+      { eventName: "Blankets & Wine", venue: "Ngong Racecourse", city: "Nairobi", startsAtLocal: local(10, 0), ticketTypeName: "GA", platform: "Mookh", orderRef: "", note: "", priceKes: 3000, payoutPhone: "254711000222" },
+      { ticket: { filename: "t.png", contentType: "image/png", data: png }, proof: { filename: "r.png", contentType: "image/png", data: png } },
+      seller.id,
+    );
+  }
+
+  it("gives a newly created outside event an AI cover in its category's style, once", async () => {
+    const admin = await makeUser("admin");
+    const listing = await submit(await makeUser());
+    const { eventId } = await approveExternalListing(
+      listing.id,
+      { mode: "create", title: "Blankets & Wine", venue: "Ngong Racecourse", city: "Nairobi", category: "festival", startsAtLocal: local(10, 0), endsAtLocal: local(10, 8) },
+      admin.id,
+    );
+    expect(await ensureOutsideEventBanner(eventId, admin)).toBe(true);
+    const [ev] = await db.select().from(events).where(eq(events.id, eventId));
+    expect(ev.coverImageUrl).toMatch(/^\/media\/events\//);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].size).toBe("1536x1024");
+    expect(calls[0].prompt).toContain("open-air festival");
+    expect(calls[0].prompt).not.toContain("Blankets");
+
+    // Already has a cover: nothing generated or billed.
+    expect(await ensureOutsideEventBanner(eventId, admin)).toBe(false);
+    expect(calls).toHaveLength(1);
+  });
+
+  it("never touches an organizer's own event", async () => {
+    const admin = await makeUser("admin");
+    const { event } = await setup();
+    expect(await ensureOutsideEventBanner(event.id, admin)).toBe(false);
+    expect(calls).toHaveLength(0);
+    expect((await db.select().from(events).where(eq(events.id, event.id)))[0].coverImageUrl).toBe(event.coverImageUrl);
   });
 });

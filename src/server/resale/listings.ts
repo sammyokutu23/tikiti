@@ -239,7 +239,7 @@ export const approveExternalSchema = z.discriminatedUnion("mode", [
   }),
 ]);
 
-export async function approveExternalListing(listingId: string, input: z.infer<typeof approveExternalSchema>, adminId: string) {
+export async function approveExternalListing(listingId: string, input: z.infer<typeof approveExternalSchema>, adminId: string): Promise<{ eventId: string }> {
   return db.transaction(async (tx) => {
     const [l] = await tx.select().from(resaleListings).where(eq(resaleListings.id, listingId)).for("update");
     if (!l || l.kind !== "external") throw new UserError("Listing not found.");
@@ -286,6 +286,7 @@ export async function approveExternalListing(listingId: string, input: z.infer<t
       .where(eq(resaleListings.id, l.id));
     await queueSellerReviewEmail(tx, l, { approved: true, eventTitle });
     await audit(tx, { actorUserId: adminId, action: "resale.approved", entityType: "resale_listing", entityId: l.id, metadata: { reference: l.reference, eventId, mode: input.mode } });
+    return { eventId };
   });
 }
 
@@ -471,7 +472,7 @@ export async function listingDocuments(listingId: string, purposes: ("ticket" | 
 export async function adminListings(tab: "review" | "active" | "all") {
   const where = tab === "review" ? eq(resaleListings.status, "pending_review") : tab === "active" ? eq(resaleListings.status, "active") : ne(resaleListings.status, "pending_review");
   return db
-    .select({ listing: resaleListings, eventTitle: events.title, sellerName: users.name, sellerEmail: users.email })
+    .select({ listing: resaleListings, eventTitle: events.title, eventIsExternal: events.isExternal, eventCover: events.coverImageUrl, sellerName: users.name, sellerEmail: users.email })
     .from(resaleListings)
     .leftJoin(events, eq(events.id, resaleListings.eventId))
     .innerJoin(users, eq(users.id, resaleListings.sellerUserId))

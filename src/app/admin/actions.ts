@@ -22,6 +22,7 @@ import { bannerLimitsSchema, setBannerLimits } from "@/server/banners/service";
 import { planPolicySchema, setPlanPolicy } from "@/server/plans/policy";
 import { adminCancelPlan, adminResolveLatePayment } from "@/server/plans/service";
 import { approveExternalListing, approveExternalSchema, cancelListing, correctedDetailsSchema, correctExternalListingDetails, rejectExternalListing } from "@/server/resale/listings";
+import { ensureOutsideEventBanner } from "@/server/resale/banner";
 import { markPayoutPaid, refundDisputedResale, releaseDisputedPayout } from "@/server/resale/payouts";
 
 const back = (fd: FormData, fallback: string) => {
@@ -324,8 +325,22 @@ export async function approveResaleAction(fd: FormData) {
       endsAtLocal: fd.get("endsAtLocal"),
     });
     if (!parsed.success) throw new UserError(parsed.error.issues[0]?.message ?? "Check the event details.");
-    await approveExternalListing(String(fd.get("listingId")), parsed.data, admin.id);
-    return "Ticket listed and live on the marketplace.";
+    const { eventId } = await approveExternalListing(String(fd.get("listingId")), parsed.data, admin.id);
+    // Outside events have no cover; the listing is already live, so a failed banner only needs a retry.
+    try {
+      const made = await ensureOutsideEventBanner(eventId, admin);
+      return made ? "Ticket listed and live on the marketplace, with an AI banner." : "Ticket listed and live on the marketplace.";
+    } catch (err) {
+      return `Ticket listed and live on the marketplace, but the banner couldn't be made: ${userMessage(err)} Use “Make banner” on the For sale tab to try again.`;
+    }
+  });
+}
+
+export async function makeResaleBannerAction(fd: FormData) {
+  const admin = await requireAdmin();
+  await run(fd, "/admin/resale?tab=active", async () => {
+    const made = await ensureOutsideEventBanner(String(fd.get("eventId")), admin);
+    return made ? "Banner made and set as the event cover." : "This event already has a cover.";
   });
 }
 

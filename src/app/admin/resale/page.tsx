@@ -14,6 +14,7 @@ import { adminPayouts } from "@/server/resale/payouts";
 import {
   adminWithdrawResaleAction,
   approveResaleAction,
+  makeResaleBannerAction,
   markResalePayoutPaidAction,
   rejectResaleAction,
   replaceResaleDetailsAction,
@@ -224,21 +225,34 @@ async function ListingTable({ tab, back }: { tab: "active" | "all"; back: string
     <Table>
       <thead><tr><th>Listing</th><th>Kind</th><th>Event</th><th>Seller</th><th>Price</th><th>Status</th><th /></tr></thead>
       <tbody>
-        {rows.map(({ listing: l, eventTitle, sellerName, sellerEmail }) => (
+        {rows.map(({ listing: l, eventTitle, eventIsExternal, eventCover, sellerName, sellerEmail }) => (
           <tr key={l.id}>
             <td className="font-mono text-xs">{l.reference}<span className="block font-sans text-muted">{formatDateTime(l.createdAt)}</span></td>
             <td><ResaleTrustBadge kind={l.kind} /></td>
-            <td>{eventTitle ?? l.externalEventName}<span className="block text-xs text-muted">{l.ticketTypeName}</span></td>
+            <td>
+              {eventTitle ?? l.externalEventName}
+              <span className="block text-xs text-muted">{l.ticketTypeName}</span>
+              {l.status === "active" && eventIsExternal && !eventCover && <Badge tone="warning" className="mt-1">No banner</Badge>}
+            </td>
             <td>{sellerName}<span className="block text-xs text-muted">{sellerEmail}</span></td>
             <td className="tabular-nums">{formatMoney(l.priceMinor)}</td>
             <td><Badge tone={LISTING_STATUS[l.status][1]}>{LISTING_STATUS[l.status][0]}</Badge></td>
             <td>
               {l.status === "active" && (
-                <form action={adminWithdrawResaleAction}>
-                  <input type="hidden" name="listingId" value={l.id} />
-                  <input type="hidden" name="back" value={back} />
-                  <SubmitButton size="sm" variant="ghost">Withdraw</SubmitButton>
-                </form>
+                <div className="flex flex-wrap gap-1">
+                  {eventIsExternal && !eventCover && l.eventId && (
+                    <form action={makeResaleBannerAction}>
+                      <input type="hidden" name="eventId" value={l.eventId} />
+                      <input type="hidden" name="back" value={back} />
+                      <SubmitButton size="sm" variant="secondary">Make banner</SubmitButton>
+                    </form>
+                  )}
+                  <form action={adminWithdrawResaleAction}>
+                    <input type="hidden" name="listingId" value={l.id} />
+                    <input type="hidden" name="back" value={back} />
+                    <SubmitButton size="sm" variant="ghost">Withdraw</SubmitButton>
+                  </form>
+                </div>
               )}
             </td>
           </tr>
