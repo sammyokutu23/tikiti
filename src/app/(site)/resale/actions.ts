@@ -37,7 +37,7 @@ export async function createPlatformListingAction(_: FormState, fd: FormData): P
 export async function createExternalListingAction(_: FormState, fd: FormData): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user) return { error: "Sign in to sell a ticket." };
-  const keys = ["eventName", "venue", "city", "startsAtLocal", "ticketTypeName", "platform", "orderRef", "note", "priceKes", "payoutPhone"];
+  const keys = ["eventName", "venue", "city", "startsAtLocal", "ticketTypeName", "platform", "orderRef", "mpesaCode", "note", "priceKes", "payoutPhone"];
   const values = formValues(fd, keys);
   const parsed = externalListingSchema.safeParse(values);
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error), values };

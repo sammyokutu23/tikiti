@@ -2,21 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, House, Repeat, Ticket, User } from "lucide-react";
+import { List, ShoppingBag, Tag, Ticket, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const side = [
   [
-    { href: "/", label: "Home", icon: House, match: (p: string) => p === "/" },
-    { href: "/events", label: "Explore", icon: Compass, match: (p: string) => p.startsWith("/events") },
+    {
+      href: "/",
+      label: "Buy",
+      icon: ShoppingBag,
+      match: (p: string) => p === "/" || p.startsWith("/events") || (p.startsWith("/resale") && !p.startsWith("/resale/sell") && !p.startsWith("/resale/mine")),
+    },
+    { href: "/resale/sell", label: "Sell", icon: Tag, match: (p: string) => p.startsWith("/resale/sell") },
   ],
   [
-    { href: "/resale", label: "Resale", icon: Repeat, match: (p: string) => p.startsWith("/resale") },
+    { href: "/resale/mine", label: "Listings", icon: List, match: (p: string) => p.startsWith("/resale/mine") },
     { href: "/account/profile", label: "Profile", icon: User, match: (p: string) => p.startsWith("/account/profile") || p.startsWith("/sign-in") || p.startsWith("/sign-up") },
   ],
 ];
 
-/** Floating phone navigation: labelled tabs around a raised "My tickets" button. */
+/** Floating phone navigation: Buy, Sell, My Listings and Profile around a raised "My Purchases" button. */
 export function BottomNav() {
   const path = usePathname();
   if (/^\/(organizer|admin|pay|checkout|dev)/.test(path) || /^\/events\/[^/]+/.test(path)) return null;
@@ -43,7 +48,7 @@ export function BottomNav() {
         <li className="relative -mt-8 flex flex-1 justify-center">
           <Link
             href="/account"
-            aria-label="My tickets"
+            aria-label="My Purchases"
             aria-current={ticketsActive ? "page" : undefined}
             className="flex size-16 items-center justify-center rounded-full bg-primary text-primary-fg shadow-lg shadow-primary/40 ring-4 ring-bg transition active:scale-95"
           >

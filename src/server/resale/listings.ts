@@ -3,6 +3,7 @@
  * tickets bought on other platforms (reviewed by an admin before going live).
  */
 import { and, desc, eq, gt, ilike, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { db, type Tx } from "@/db";
 import {
@@ -26,6 +27,7 @@ import { isUniqueViolation, UserError } from "@/lib/errors";
 import { normalizeKenyanPhone, slugify } from "@/lib/utils";
 import { audit } from "../audit";
 import { queueEmail } from "../email/queue";
+import { enqueueJob } from "../jobs/queue";
 import { type EventSearch, isCategory, searchDateRange } from "../events/queries";
 import type { ResaleUpload } from "./documents";
 import { MAX_RESALE_PRICE_KES, MIN_RESALE_PRICE_KES } from "./policy";
@@ -55,6 +57,14 @@ const payoutPhone = z
 
 export const platformListingSchema = z.object({ ticketId: z.uuid(), priceKes, payoutPhone });
 
+/** M-Pesa confirmation code, e.g. SJK3H7QX2P: optional (tickets can be paid by card or cash). */
+const mpesaCode = z
+  .string()
+  .trim()
+  .transform((v) => v.replace(/\s+/g, "").toUpperCase())
+  .refine((v) => v === "" || /^[A-Z0-9]{10}$/.test(v), "An M-Pesa code is 10 letters and numbers, e.g. SJK3H7QX2P")
+  .optional();
+
 export const externalListingSchema = z.object({
   eventName: z.string().trim().min(3, "Enter the event name").max(160),
   venue: z.string().trim().min(2, "Enter the venue").max(160),
@@ -63,6 +73,7 @@ export const externalListingSchema = z.object({
   ticketTypeName: z.string().trim().min(2, "Enter the ticket type, e.g. Regular or VIP").max(80),
   platform: z.string().trim().min(2, "Where did you buy it?").max(80),
   orderRef: z.string().trim().max(120).default(""),
+  mpesaCode,
   note: z.string().trim().max(600).default(""),
   priceKes,
   payoutPhone,
@@ -162,7 +173,9 @@ export async function createExternalListing(
         externalStartsAt: startsAt,
         externalPlatform: input.platform,
         externalOrderRef: input.orderRef || null,
+        externalMpesaCode: input.mpesaCode || null,
         sellerNote: input.note,
+        checkStatus: "pending",
       })
       .returning();
     await tx.insert(resaleDocuments).values([
@@ -170,6 +183,7 @@ export async function createExternalListing(
       { listingId: listing.id, purpose: "proof", filename: files.proof.filename, contentType: files.proof.contentType, sizeBytes: files.proof.data.length, data: files.proof.data },
     ]);
     await audit(tx, { actorUserId: sellerUserId, action: "resale.submitted", entityType: "resale_listing", entityId: listing.id, metadata: { kind: "external", platform: input.platform, priceMinor: listing.priceMinor } });
+    await enqueueJob(tx, "resale.verify", { listingId: listing.id });
     return listing;
   });
 }
@@ -291,7 +305,7 @@ export async function approveExternalListing(listingId: string, input: z.infer<t
 }
 
 /** Details an admin can withdraw and replace while reviewing an outside ticket (price and payout stay the seller's). */
-export const correctedDetailsSchema = externalListingSchema.pick({ eventName: true, venue: true, city: true, startsAtLocal: true, ticketTypeName: true, platform: true, orderRef: true, note: true });
+export const correctedDetailsSchema = externalListingSchema.pick({ eventName: true, venue: true, city: true, startsAtLocal: true, ticketTypeName: true, platform: true, orderRef: true, mpesaCode: true, note: true });
 
 const detailsOf = (l: ResaleListing) => ({
   eventName: l.externalEventName,
@@ -301,6 +315,7 @@ const detailsOf = (l: ResaleListing) => ({
   ticketTypeName: l.ticketTypeName,
   platform: l.externalPlatform,
   orderRef: l.externalOrderRef,
+  mpesaCode: l.externalMpesaCode as string | null | undefined,
   note: l.sellerNote,
 });
 export type ListingDetails = ReturnType<typeof detailsOf>;
@@ -324,7 +339,9 @@ export async function correctExternalListingDetails(listingId: string, input: z.
         ticketTypeName: input.ticketTypeName,
         externalPlatform: input.platform,
         externalOrderRef: input.orderRef || null,
+        externalMpesaCode: input.mpesaCode || null,
         sellerNote: input.note,
+        checkStatus: "pending",
         updatedAt: new Date(),
       })
       .where(eq(resaleListings.id, l.id))
@@ -336,6 +353,7 @@ export async function correctExternalListingDetails(listingId: string, input: z.
       entityId: l.id,
       metadata: { reference: l.reference, withdrawn: detailsOf(l), entered: detailsOf(updated) },
     });
+    await enqueueJob(tx, "resale.verify", { listingId: l.id });
   });
 }
 
@@ -462,20 +480,95 @@ export async function openListingsForTickets(ticketIds: string[]) {
     .where(and(inArray(resaleListings.ticketId, ticketIds), eq(resaleListings.status, "active")));
 }
 
+/** The listing's current files (an admin's replacement, never the file it withdrew). */
 export async function listingDocuments(listingId: string, purposes: ("ticket" | "proof")[] = ["ticket", "proof"]) {
   return db
     .select({ id: resaleDocuments.id, purpose: resaleDocuments.purpose, filename: resaleDocuments.filename, sizeBytes: resaleDocuments.sizeBytes })
     .from(resaleDocuments)
-    .where(and(eq(resaleDocuments.listingId, listingId), inArray(resaleDocuments.purpose, purposes)));
+    .where(and(eq(resaleDocuments.listingId, listingId), inArray(resaleDocuments.purpose, purposes), isNull(resaleDocuments.withdrawnAt)));
+}
+
+/** Every file on a listing, withdrawn ones included, with who replaced what (admin review). */
+export async function listingDocumentHistory(listingId: string) {
+  const uploader = alias(users, "uploader");
+  const withdrawer = alias(users, "withdrawer");
+  return db
+    .select({
+      id: resaleDocuments.id,
+      purpose: resaleDocuments.purpose,
+      filename: resaleDocuments.filename,
+      sizeBytes: resaleDocuments.sizeBytes,
+      createdAt: resaleDocuments.createdAt,
+      withdrawnAt: resaleDocuments.withdrawnAt,
+      withdrawnByName: withdrawer.name,
+      uploadedByName: uploader.name,
+    })
+    .from(resaleDocuments)
+    .leftJoin(uploader, eq(uploader.id, resaleDocuments.uploadedBy))
+    .leftJoin(withdrawer, eq(withdrawer.id, resaleDocuments.withdrawnBy))
+    .where(eq(resaleDocuments.listingId, listingId))
+    .orderBy(resaleDocuments.purpose, desc(resaleDocuments.createdAt));
+}
+
+/**
+ * Withdraws an outside listing's current ticket file and stores the admin's
+ * replacement. The withdrawn file is kept (and listed for admins) but is never
+ * served to buyers. The verification bot runs again on the new file.
+ */
+export async function replaceListingTicketFile(listingId: string, file: ResaleUpload, adminId: string) {
+  return db.transaction(async (tx) => {
+    const [l] = await tx.select().from(resaleListings).where(eq(resaleListings.id, listingId)).for("update");
+    if (!l || l.kind !== "external") throw new UserError("Listing not found.");
+    if (l.status !== "pending_review" && l.status !== "active") throw new UserError("The ticket file can only be replaced before the ticket is sold.");
+    const now = new Date();
+    const withdrawn = await tx
+      .update(resaleDocuments)
+      .set({ withdrawnAt: now, withdrawnBy: adminId })
+      .where(and(eq(resaleDocuments.listingId, l.id), eq(resaleDocuments.purpose, "ticket"), isNull(resaleDocuments.withdrawnAt)))
+      .returning({ id: resaleDocuments.id, filename: resaleDocuments.filename });
+    const [doc] = await tx
+      .insert(resaleDocuments)
+      .values({ listingId: l.id, purpose: "ticket", filename: file.filename, contentType: file.contentType, sizeBytes: file.data.length, data: file.data, uploadedBy: adminId })
+      .returning({ id: resaleDocuments.id });
+    await tx.update(resaleListings).set({ checkStatus: "pending", updatedAt: now }).where(eq(resaleListings.id, l.id));
+    await audit(tx, {
+      actorUserId: adminId,
+      action: "resale.ticket_file_replaced",
+      entityType: "resale_listing",
+      entityId: l.id,
+      metadata: { reference: l.reference, withdrawn: withdrawn, newDocumentId: doc.id, filename: file.filename },
+    });
+    await enqueueJob(tx, "resale.verify", { listingId: l.id });
+  });
+}
+
+/** Queues the verification bot again (admin "Run checks again"). */
+export async function requeueListingChecks(listingId: string) {
+  await db.transaction(async (tx) => {
+    const [l] = await tx.update(resaleListings).set({ checkStatus: "pending" }).where(and(eq(resaleListings.id, listingId), eq(resaleListings.kind, "external"))).returning({ id: resaleListings.id });
+    if (!l) throw new UserError("Listing not found.");
+    await enqueueJob(tx, "resale.verify", { listingId });
+  });
 }
 
 export async function adminListings(tab: "review" | "active" | "all") {
+  const reviewer = alias(users, "reviewer");
   const where = tab === "review" ? eq(resaleListings.status, "pending_review") : tab === "active" ? eq(resaleListings.status, "active") : ne(resaleListings.status, "pending_review");
   return db
-    .select({ listing: resaleListings, eventTitle: events.title, eventIsExternal: events.isExternal, eventCover: events.coverImageUrl, sellerName: users.name, sellerEmail: users.email })
+    .select({
+      listing: resaleListings,
+      eventTitle: events.title,
+      eventIsExternal: events.isExternal,
+      eventCover: events.coverImageUrl,
+      sellerName: users.name,
+      sellerEmail: users.email,
+      reviewerName: reviewer.name,
+      reviewerEmail: reviewer.email,
+    })
     .from(resaleListings)
     .leftJoin(events, eq(events.id, resaleListings.eventId))
     .innerJoin(users, eq(users.id, resaleListings.sellerUserId))
+    .leftJoin(reviewer, eq(reviewer.id, resaleListings.reviewedBy))
     .where(where)
     .orderBy(resaleListings.createdAt)
     .limit(300);

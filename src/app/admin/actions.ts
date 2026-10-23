@@ -21,7 +21,17 @@ import { MAX_COMMISSION_BPS, setCommissionBps, getCommissionBps } from "@/server
 import { bannerLimitsSchema, setBannerLimits } from "@/server/banners/service";
 import { planPolicySchema, setPlanPolicy } from "@/server/plans/policy";
 import { adminCancelPlan, adminResolveLatePayment } from "@/server/plans/service";
-import { approveExternalListing, approveExternalSchema, cancelListing, correctedDetailsSchema, correctExternalListingDetails, rejectExternalListing } from "@/server/resale/listings";
+import { readResaleUpload } from "@/server/resale/documents";
+import {
+  approveExternalListing,
+  approveExternalSchema,
+  cancelListing,
+  correctedDetailsSchema,
+  correctExternalListingDetails,
+  rejectExternalListing,
+  replaceListingTicketFile,
+  requeueListingChecks,
+} from "@/server/resale/listings";
 import { ensureOutsideEventBanner } from "@/server/resale/banner";
 import { markPayoutPaid, refundDisputedResale, releaseDisputedPayout } from "@/server/resale/payouts";
 
@@ -347,11 +357,31 @@ export async function makeResaleBannerAction(fd: FormData) {
 export async function replaceResaleDetailsAction(fd: FormData) {
   const admin = await requireAdmin();
   await run(fd, "/admin/resale", async () => {
-    const values = Object.fromEntries(["eventName", "venue", "city", "startsAtLocal", "ticketTypeName", "platform", "orderRef", "note"].map((k) => [k, String(fd.get(k) ?? "")]));
+    const values = Object.fromEntries(["eventName", "venue", "city", "startsAtLocal", "ticketTypeName", "platform", "orderRef", "mpesaCode", "note"].map((k) => [k, String(fd.get(k) ?? "")]));
     const parsed = correctedDetailsSchema.safeParse(values);
     if (!parsed.success) throw new UserError(parsed.error.issues[0]?.message ?? "Check the ticket details.");
     await correctExternalListingDetails(String(fd.get("listingId")), parsed.data, admin.id);
-    return "Old details withdrawn and the new details saved. You can now list or reject the ticket.";
+    await processDueJobs(5);
+    return "Old details withdrawn and the new details saved. Checks run again on the new details.";
+  });
+}
+
+export async function replaceResaleTicketFileAction(fd: FormData) {
+  const admin = await requireAdmin();
+  await run(fd, "/admin/resale", async () => {
+    const file = await readResaleUpload(fd.get("ticketFile"), "new ticket file");
+    await replaceListingTicketFile(String(fd.get("listingId")), file, admin.id);
+    await processDueJobs(5);
+    return "Old ticket file withdrawn and the new one saved. Checks are running again on the new file.";
+  });
+}
+
+export async function rerunResaleChecksAction(fd: FormData) {
+  await requireAdmin();
+  await run(fd, "/admin/resale", async () => {
+    await requeueListingChecks(String(fd.get("listingId")));
+    await processDueJobs(5);
+    return "Checks queued. Results appear on the ticket in a moment.";
   });
 }
 

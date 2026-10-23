@@ -209,7 +209,7 @@ export default async function BookingPage({ params, searchParams }: PageProps<"/
                           </Link>
                         )}
                         {!listing && canResell && ticket.status === "valid" && (
-                          <Link href="/resale/sell" className="text-xs font-semibold text-teal hover:underline">Can&apos;t go? Resell this ticket</Link>
+                          <Link href="/resale/sell/tikosoko" className="text-xs font-semibold text-teal hover:underline">Can&apos;t go? Resell this ticket</Link>
                         )}
                         <a
                           href={`/api/bookings/${booking.reference}/tickets/${ticket.code}/pdf${q}`}

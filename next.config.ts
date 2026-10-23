@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: "5mb" }, // 4 MB cover images + multipart overhead
   },
+  async redirects() {
+    // "Explore events" became the Buy page (the home page); query filters are passed through.
+    return [{ source: "/events", destination: "/", permanent: false }];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

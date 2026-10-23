@@ -855,7 +855,13 @@ export const resaleListings = pgTable(
     externalStartsAt: ts("external_starts_at"),
     externalPlatform: text("external_platform"),
     externalOrderRef: text("external_order_ref"),
+    /** External listings: M-Pesa confirmation code from the seller's original purchase (optional). */
+    externalMpesaCode: text("external_mpesa_code"),
     sellerNote: text("seller_note").notNull().default(""),
+    /** Verification bot (external listings): pending | passed | flagged | error. Advisory only; an admin always approves. */
+    checkStatus: text("check_status"),
+    checkResult: jsonb("check_result"),
+    checkedAt: ts("checked_at"),
     reviewNote: text("review_note"),
     reviewedBy: uuid("reviewed_by").references(() => users.id),
     reviewedAt: ts("reviewed_at"),
@@ -896,6 +902,11 @@ export const resaleDocuments = pgTable(
     contentType: text("content_type").notNull(),
     sizeBytes: integer("size_bytes").notNull(),
     data: bytea("data").notNull(),
+    /** Set when an admin replaces the file; kept for the record, never shown to buyers. */
+    withdrawnAt: ts("withdrawn_at"),
+    withdrawnBy: uuid("withdrawn_by").references(() => users.id),
+    /** The admin who uploaded this file as a replacement (null for the seller's upload). */
+    uploadedBy: uuid("uploaded_by").references(() => users.id),
     createdAt: createdAt(),
   },
   (t) => [

@@ -1,59 +1,49 @@
+import Link from "next/link";
 import { ArrowRight, Globe, Ticket } from "lucide-react";
-import { EventImage } from "@/components/events/event-image";
-import { ButtonLink, Card, EmptyState, PageHeader } from "@/components/ui";
-import { formatDateTime } from "@/lib/dates";
-import { formatMoney } from "@/lib/money";
-import { formatPhone } from "@/lib/utils";
+import { PageHeader } from "@/components/ui";
 import { requireUser } from "@/server/auth/guards";
-import { resellableTickets } from "@/server/resale/listings";
-import { PlatformListingForm } from "../forms";
 
 export const metadata = { title: "Sell a ticket" };
 
+const CHOICES = [
+  {
+    href: "/resale/sell/tikosoko",
+    icon: Ticket,
+    tone: "bg-mint text-[#3a2500]",
+    title: "A ticket I bought on TikoSoko",
+    body: "Pick it from your purchases and set a price. It goes live straight away.",
+  },
+  {
+    href: "/resale/sell/outside",
+    icon: Globe,
+    tone: "bg-sun text-[#2a1d00]",
+    title: "A ticket I bought somewhere else",
+    body: "Mookh, Ticketsasa, the organizer… Upload it with your proof of purchase. Our team reviews it before it goes live.",
+  },
+];
+
 export default async function SellTicketPage() {
-  const user = await requireUser("/resale/sell");
-  const rows = await resellableTickets(user.id);
-  const phone = user.phone ? formatPhone(user.phone) : "";
-
+  await requireUser("/resale/sell");
   return (
-    <div className="mx-auto max-w-4xl space-y-8 px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
-      <PageHeader title="Sell a ticket" subtitle="Set your price. You get the full amount on M-Pesa after the event; buyers pay a 10% fee on top." />
-
-      <section className="space-y-4">
-        <h2 className="flex items-center gap-2 text-lg font-semibold"><Ticket className="size-5 text-teal" aria-hidden /> Your TikoSoko tickets</h2>
-        {rows.length === 0 ? (
-          <EmptyState icon={<Ticket className="size-6" />} title="No tickets to resell" body="Valid, unused tickets for upcoming events booked with this account show up here." />
-        ) : (
-          rows.map((r) => (
-            <Card key={r.ticketId} className="space-y-4 p-4">
-              <div className="flex items-center gap-4">
-                <EventImage src={r.event.coverImageUrl} alt="" width={200} sizes="64px" className="size-16 shrink-0 rounded-2xl" />
-                <div className="min-w-0">
-                  <p className="text-xs text-muted">{formatDateTime(r.event.startsAt, r.event.timezone)}</p>
-                  <p className="line-clamp-1 font-semibold">{r.event.title}</p>
-                  <p className="text-sm text-muted">
-                    {r.typeName} · paid {formatMoney(r.unitPriceMinor)} · <span className="font-mono text-xs">{r.code}</span>
-                  </p>
-                </div>
-              </div>
-              <PlatformListingForm ticketId={r.ticketId} defaultPhone={phone} faceValueMinor={r.unitPriceMinor || 100_00} />
-            </Card>
-          ))
-        )}
-      </section>
-
-      <Card className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-sun text-[#2a1d00]"><Globe className="size-5" aria-hidden /></span>
-          <div>
-            <p className="font-semibold">Bought your ticket somewhere else?</p>
-            <p className="text-sm text-muted">Sell tickets from Mookh, Ticketsasa or the organizer. Our team reviews each one before it goes live.</p>
-          </div>
-        </div>
-        <ButtonLink href="/resale/sell/outside" variant="secondary" className="shrink-0">
-          Sell an outside ticket <ArrowRight className="size-4" aria-hidden />
-        </ButtonLink>
-      </Card>
+    <div className="mx-auto max-w-3xl space-y-6 px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
+      <PageHeader title="Sell a ticket" subtitle="Where did you buy the ticket you'd like to sell?" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        {CHOICES.map(({ href, icon: Icon, tone, title, body }) => (
+          <Link key={href} href={href} className="group flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-surface p-5 transition hover:-translate-y-0.5 hover:border-teal/40 hover:shadow-lg">
+            <span className={`flex size-12 items-center justify-center rounded-2xl ${tone}`}>
+              <Icon className="size-6" aria-hidden />
+            </span>
+            <span className="space-y-1">
+              <span className="block text-lg font-bold">{title}</span>
+              <span className="block text-sm text-muted">{body}</span>
+            </span>
+            <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-teal">
+              Continue <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
+            </span>
+          </Link>
+        ))}
+      </div>
+      <p className="text-sm text-muted">You get your full asking price on M-Pesa after the event. Buyers pay a 10% fee on top.</p>
     </div>
   );
 }

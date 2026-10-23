@@ -4,7 +4,7 @@ import { CATEGORIES } from "@/server/events/queries";
 import { cn } from "@/lib/utils";
 import { CATEGORY_STYLE, CHIP_TONE } from "./category-style";
 
-export function CategoryChips({ active, base = "/events", extra }: { active?: string; base?: string; extra?: Record<string, string | undefined> }) {
+export function CategoryChips({ active, base = "/", extra }: { active?: string; base?: string; extra?: Record<string, string | undefined> }) {
   const qs = (category?: string) => {
     const p = new URLSearchParams();
     for (const [k, v] of Object.entries(extra ?? {})) if (v) p.set(k, v);

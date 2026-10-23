@@ -13,7 +13,8 @@ export type JobType =
   | "email.event_update_fanout"
   | "refund.process"
   | "payment.mock_webhook"
-  | "payment.mpesa_callback";
+  | "payment.mpesa_callback"
+  | "resale.verify";
 
 /**
  * Throw (or attach these fields to an error) from a handler to steer retries:

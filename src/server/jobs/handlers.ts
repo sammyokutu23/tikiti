@@ -4,6 +4,7 @@ import { processRefund } from "../payments/service";
 import { handlePaymentWebhook } from "../payments/service";
 import { MOCK_SIGNATURE_HEADER } from "../payments/providers/mock";
 import { processMpesaCallbackEvent } from "../payments/mpesa";
+import { markVerificationError, verifyExternalListing } from "../resale/verify";
 import { registerJobHandler } from "./queue";
 
 registerJobHandler("email.send", async (payload, job) => {
@@ -29,4 +30,15 @@ registerJobHandler("payment.mock_webhook", async (payload) => {
 /** Verifies and applies a stored M-Pesa STK callback (retried with backoff). */
 registerJobHandler("payment.mpesa_callback", async (payload, job) => {
   await processMpesaCallbackEvent(String(payload.eventId), { isLast: job.attempts >= job.maxAttempts });
+});
+
+/** Verification bot for outside resale tickets (advisory; admins still approve). */
+registerJobHandler("resale.verify", async (payload, job) => {
+  const listingId = String(payload.listingId);
+  try {
+    await verifyExternalListing(listingId);
+  } catch (err) {
+    if (job.attempts >= job.maxAttempts) await markVerificationError(listingId, "The checks couldn't run. Use “Run checks again”, or review the ticket by hand.");
+    throw err;
+  }
 });

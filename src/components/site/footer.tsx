@@ -14,7 +14,7 @@ export function SiteFooter() {
         </div>
         <div className="space-y-2 text-sm">
           <p className="font-semibold">Attend</p>
-          <Link href="/events" className="block text-muted hover:text-fg">Browse events</Link>
+          <Link href="/" className="block text-muted hover:text-fg">Buy tickets</Link>
           <Link href="/bookings/find" className="block text-muted hover:text-fg">Find my booking</Link>
           <Link href="/account" className="block text-muted hover:text-fg">My tickets</Link>
           <Link href="/resale" className="block text-muted hover:text-fg">Resale marketplace</Link>

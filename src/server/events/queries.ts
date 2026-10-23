@@ -157,7 +157,7 @@ export type PublicEventDetail = {
   ticketTypes: (TicketType & { remaining: number; onSale: boolean; saleState: "on_sale" | "upcoming" | "ended" | "sold_out" })[];
 };
 
-function decorateTypes(types: TicketType[], now = new Date()) {
+export function decorateTypes(types: TicketType[], now = new Date()) {
   return types.map((t) => {
     const remaining = Math.max(0, t.capacity - t.sold - t.reserved);
     const saleState: "on_sale" | "upcoming" | "ended" | "sold_out" =

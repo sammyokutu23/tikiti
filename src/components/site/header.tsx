@@ -18,9 +18,10 @@ export function SiteHeader({ user, hasOrganizerProfile, theme }: { user: UserT |
         <Logo />
         <NavLinks
           items={[
-            { href: "/events", label: "Explore events" },
-            { href: "/account", label: "My tickets" },
-            { href: "/resale", label: "Resale" },
+            { href: "/", label: "Buy" },
+            { href: "/resale/sell", label: "Sell" },
+            { href: "/resale/mine", label: "My Listings" },
+            { href: "/account", label: "My Purchases" },
             ...(showOrganizer ? [{ href: orgHref, label: "Organizer dashboard" }] : []),
             ...(user?.role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
           ]}
@@ -40,8 +41,8 @@ export function SiteHeader({ user, hasOrganizerProfile, theme }: { user: UserT |
             {user && <span className="hidden max-w-32 truncate text-[15px] font-medium text-fg/90 sm:inline">{user.name.split(" ")[0]}</span>}
             <UserButton appearance={{ elements: { avatarBox: "size-9" } }}>
               <UserButton.MenuItems>
-                <UserButton.Link label="My tickets" labelIcon={<Ticket className="size-4" />} href="/account" />
-                <UserButton.Link label="My resale listings" labelIcon={<Repeat className="size-4" />} href="/resale/mine" />
+                <UserButton.Link label="My purchases" labelIcon={<Ticket className="size-4" />} href="/account" />
+                <UserButton.Link label="My listings" labelIcon={<Repeat className="size-4" />} href="/resale/mine" />
                 <UserButton.Link label="Profile & phone" labelIcon={<User className="size-4" />} href="/account/profile" />
                 {showOrganizer ? <UserButton.Link label="Organizer dashboard" labelIcon={<LayoutDashboard className="size-4" />} href={orgHref} /> : null}
                 {user?.role === "admin" ? <UserButton.Link label="Admin" labelIcon={<Shield className="size-4" />} href="/admin" /> : null}

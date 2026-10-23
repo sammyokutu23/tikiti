@@ -1,4 +1,4 @@
-import { FileText } from "lucide-react";
+import { CircleAlert, CircleCheck, FileText, LoaderCircle, TriangleAlert } from "lucide-react";
 import { Flash } from "@/components/dash/flash";
 import { PanelTabs } from "@/components/dash/panel-tabs";
 import { LISTING_STATUS, ResaleTrustBadge } from "@/components/resale/listing-card";
@@ -9,7 +9,8 @@ import { formatMoney } from "@/lib/money";
 import { formatPhone } from "@/lib/utils";
 import { requireAdmin } from "@/server/auth/guards";
 import { CATEGORIES } from "@/server/events/queries";
-import { adminListings, linkableEvents, listingDocuments, withdrawnDetails, type ListingDetails } from "@/server/resale/listings";
+import { adminListings, linkableEvents, listingDocumentHistory, withdrawnDetails, type ListingDetails } from "@/server/resale/listings";
+import type { CheckResult } from "@/server/resale/verify";
 import { adminPayouts } from "@/server/resale/payouts";
 import {
   adminWithdrawResaleAction,
@@ -18,6 +19,8 @@ import {
   markResalePayoutPaidAction,
   rejectResaleAction,
   replaceResaleDetailsAction,
+  replaceResaleTicketFileAction,
+  rerunResaleChecksAction,
   resolveResaleDisputeAction,
 } from "../actions";
 
@@ -58,6 +61,7 @@ function DetailsList({ d }: { d: ListingDetails }) {
     ["Ticket type", d.ticketTypeName],
     ["Bought on", d.platform],
     ["Order number", d.orderRef],
+    ["M-Pesa code", d.mpesaCode ?? null],
     ["Note", d.note],
   ];
   return (
@@ -72,6 +76,54 @@ function DetailsList({ d }: { d: ListingDetails }) {
   );
 }
 
+/** The verification bot's verdict. Advisory: only the admin's own Approve lists a ticket. */
+function ChecksPanel({ listingId, status, result, checkedAt, back }: { listingId: string; status: string | null; result: CheckResult | null; checkedAt: Date | null; back: string }) {
+  const head =
+    status === "passed"
+      ? { tone: "border-success/40 bg-success/10", icon: <CircleCheck className="size-5 shrink-0 text-success" aria-hidden />, title: "Checks passed: ready for your approval", body: "Everything the bot could check matches. Approving is still your decision." }
+      : status === "flagged"
+        ? { tone: "border-danger/40 bg-danger/10", icon: <TriangleAlert className="size-5 shrink-0 text-danger" aria-hidden />, title: "Problems found: check before approving", body: "Compare each item marked below with the uploaded files." }
+        : status === "error"
+          ? { tone: "border-warning/40 bg-warning/10", icon: <CircleAlert className="size-5 shrink-0 text-warning" aria-hidden />, title: "The checks couldn't run", body: "Review this ticket by hand, or run the checks again." }
+          : status === "pending"
+            ? { tone: "border-line bg-surface-2", icon: <LoaderCircle className="size-5 shrink-0 animate-spin text-muted" aria-hidden />, title: "Checking this ticket…", body: "The bot is reading the ticket and proof of purchase. Reload in a minute." }
+            : { tone: "border-line bg-surface-2", icon: <CircleAlert className="size-5 shrink-0 text-muted" aria-hidden />, title: "Not checked yet", body: "This ticket was uploaded before the checks existed." };
+  return (
+    <div className={`space-y-3 rounded-2xl border p-4 ${head.tone}`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex gap-2.5">
+          {head.icon}
+          <div>
+            <p className="font-semibold">{head.title}</p>
+            <p className="text-sm text-muted">{head.body}{checkedAt && status !== "pending" ? ` Checked ${formatDateTime(checkedAt)}.` : ""}</p>
+          </div>
+        </div>
+        <form action={rerunResaleChecksAction}>
+          <input type="hidden" name="listingId" value={listingId} />
+          <input type="hidden" name="back" value={back} />
+          <SubmitButton size="sm" variant="ghost">Run checks again</SubmitButton>
+        </form>
+      </div>
+      {result && result.items.length > 0 && status !== "pending" && (
+        <ul className="space-y-1.5 text-sm">
+          {result.items.map((it, i) => (
+            <li key={i} className="flex gap-2">
+              {it.status === "ok" ? (
+                <CircleCheck className="mt-0.5 size-4 shrink-0 text-success" aria-label="Matches" />
+              ) : it.status === "fail" ? (
+                <TriangleAlert className="mt-0.5 size-4 shrink-0 text-danger" aria-label="Problem" />
+              ) : (
+                <CircleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-label="Check by hand" />
+              )}
+              <span><b className="font-medium">{it.label}:</b> {it.detail}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 async function ReviewQueue({ back }: { back: string }) {
   const [rows, events] = await Promise.all([adminListings("review"), linkableEvents()]);
   if (rows.length === 0) return <EmptyState title="No uploaded tickets to review" body="Tickets sellers upload from other platforms appear here." />;
@@ -79,7 +131,7 @@ async function ReviewQueue({ back }: { back: string }) {
     <div className="space-y-5">
       {await Promise.all(
         rows.map(async ({ listing: l, sellerName, sellerEmail }) => {
-          const [docs, withdrawn] = await Promise.all([listingDocuments(l.id), withdrawnDetails(l.id)]);
+          const [docs, withdrawn] = await Promise.all([listingDocumentHistory(l.id), withdrawnDetails(l.id)]);
           const start = l.externalStartsAt ?? new Date();
           const current: ListingDetails = {
             eventName: l.externalEventName,
@@ -89,6 +141,7 @@ async function ReviewQueue({ back }: { back: string }) {
             ticketTypeName: l.ticketTypeName,
             platform: l.externalPlatform,
             orderRef: l.externalOrderRef,
+            mpesaCode: l.externalMpesaCode,
             note: l.sellerNote,
           };
           return (
@@ -107,18 +160,41 @@ async function ReviewQueue({ back }: { back: string }) {
                   {withdrawn.length > 0 && <Badge tone="info">Details replaced by admin</Badge>}
                 </div>
               </div>
+              <ChecksPanel listingId={l.id} status={l.checkStatus} result={l.checkResult as CheckResult | null} checkedAt={l.checkedAt} back={back} />
               <PanelTabs
                 tabs={[
                   {
                     key: "ticket",
                     label: "Uploaded ticket",
                     content: (
-                      <div className="flex flex-wrap gap-2">
-                        {docs.map((d) => (
-                          <a key={d.id} href={`/api/resale/documents/${d.id}`} className="inline-flex items-center gap-1.5 rounded-full bg-fg/8 px-3 py-1.5 text-sm hover:bg-fg/14">
-                            <FileText className="size-4" aria-hidden /> {d.purpose === "ticket" ? "Ticket" : "Proof of purchase"} ({Math.ceil(d.sizeBytes / 1024)} KB)
-                          </a>
-                        ))}
+                      <div className="space-y-4">
+                        <div className="flex flex-wrap gap-2">
+                          {docs.filter((d) => !d.withdrawnAt).map((d) => (
+                            <a key={d.id} href={`/api/resale/documents/${d.id}`} className="inline-flex items-center gap-1.5 rounded-full bg-fg/8 px-3 py-1.5 text-sm hover:bg-fg/14">
+                              <FileText className="size-4" aria-hidden /> {d.purpose === "ticket" ? "Ticket" : "Proof of purchase"} ({Math.ceil(d.sizeBytes / 1024)} KB)
+                              {d.uploadedByName && <span className="text-xs text-muted">· replaced by {d.uploadedByName}</span>}
+                            </a>
+                          ))}
+                        </div>
+                        {docs.some((d) => d.withdrawnAt) && (
+                          <div className="space-y-1.5 rounded-2xl bg-surface-2 p-3 text-sm">
+                            <p className="text-xs font-semibold text-muted">Withdrawn files (kept for the record, never sent to buyers)</p>
+                            {docs.filter((d) => d.withdrawnAt).map((d) => (
+                              <a key={d.id} href={`/api/resale/documents/${d.id}`} className="flex flex-wrap items-center gap-1.5 text-muted hover:text-fg">
+                                <FileText className="size-4" aria-hidden /> <span className="line-through">{d.filename}</span>
+                                <span className="text-xs">withdrawn {formatDateTime(d.withdrawnAt!)}{d.withdrawnByName ? ` by ${d.withdrawnByName}` : ""}</span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                        <form action={replaceResaleTicketFileAction} className="space-y-3 rounded-2xl border border-line p-4">
+                          <p className="text-sm font-semibold">Withdraw the ticket file and upload a new one</p>
+                          <p className="text-xs text-muted">Use this when the seller uploaded the wrong or an unreadable file. PDF, JPG, PNG or WebP, up to 2 MB. The buyer only ever gets the newest file.</p>
+                          <input type="hidden" name="listingId" value={l.id} />
+                          <input type="hidden" name="back" value={back} />
+                          <Input name="ticketFile" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" aria-label="New ticket file" required />
+                          <SubmitButton size="sm" variant="secondary">Withdraw old file &amp; save new</SubmitButton>
+                        </form>
                       </div>
                     ),
                   },
@@ -157,6 +233,7 @@ async function ReviewQueue({ back }: { back: string }) {
                         <Field label="Ticket type" htmlFor={`t-${l.id}`}><Input id={`t-${l.id}`} name="ticketTypeName" defaultValue={l.ticketTypeName} required /></Field>
                         <Field label="Bought on" htmlFor={`p-${l.id}`}><Input id={`p-${l.id}`} name="platform" defaultValue={l.externalPlatform ?? ""} required /></Field>
                         <Field label="Order number" htmlFor={`o-${l.id}`}><Input id={`o-${l.id}`} name="orderRef" defaultValue={l.externalOrderRef ?? ""} /></Field>
+                        <Field label="M-Pesa code" htmlFor={`mp-${l.id}`}><Input id={`mp-${l.id}`} name="mpesaCode" defaultValue={l.externalMpesaCode ?? ""} placeholder="e.g. SJK3H7QX2P" /></Field>
                         <Field label="Note shown to buyers" htmlFor={`m-${l.id}`} className="sm:col-span-2"><Textarea id={`m-${l.id}`} name="note" defaultValue={l.sellerNote} className="min-h-20" /></Field>
                         <div className="sm:col-span-2"><SubmitButton size="sm">Withdraw old details &amp; save new</SubmitButton></div>
                       </form>
@@ -223,9 +300,9 @@ async function ListingTable({ tab, back }: { tab: "active" | "all"; back: string
   const rows = await adminListings(tab);
   return (
     <Table>
-      <thead><tr><th>Listing</th><th>Kind</th><th>Event</th><th>Seller</th><th>Price</th><th>Status</th><th /></tr></thead>
+      <thead><tr><th>Listing</th><th>Kind</th><th>Event</th><th>Seller</th><th>Price</th><th>Status</th><th>Approved by</th><th /></tr></thead>
       <tbody>
-        {rows.map(({ listing: l, eventTitle, eventIsExternal, eventCover, sellerName, sellerEmail }) => (
+        {rows.map(({ listing: l, eventTitle, eventIsExternal, eventCover, sellerName, sellerEmail, reviewerName, reviewerEmail }) => (
           <tr key={l.id}>
             <td className="font-mono text-xs">{l.reference}<span className="block font-sans text-muted">{formatDateTime(l.createdAt)}</span></td>
             <td><ResaleTrustBadge kind={l.kind} /></td>
@@ -237,6 +314,18 @@ async function ListingTable({ tab, back }: { tab: "active" | "all"; back: string
             <td>{sellerName}<span className="block text-xs text-muted">{sellerEmail}</span></td>
             <td className="tabular-nums">{formatMoney(l.priceMinor)}</td>
             <td><Badge tone={LISTING_STATUS[l.status][1]}>{LISTING_STATUS[l.status][0]}</Badge></td>
+            <td className="text-sm">
+              {l.kind === "platform" ? (
+                <span className="text-muted">No review needed</span>
+              ) : reviewerName ? (
+                <>
+                  {l.status === "rejected" ? "Rejected by " : ""}{reviewerName}
+                  <span className="block text-xs text-muted">{reviewerEmail}{l.reviewedAt ? ` · ${formatDateTime(l.reviewedAt)}` : ""}</span>
+                </>
+              ) : (
+                <span className="text-muted">Not reviewed</span>
+              )}
+            </td>
             <td>
               {l.status === "active" && (
                 <div className="flex flex-wrap gap-1">
@@ -257,7 +346,7 @@ async function ListingTable({ tab, back }: { tab: "active" | "all"; back: string
             </td>
           </tr>
         ))}
-        {rows.length === 0 && <tr><td colSpan={7} className="text-muted">Nothing here.</td></tr>}
+        {rows.length === 0 && <tr><td colSpan={8} className="text-muted">Nothing here.</td></tr>}
       </tbody>
     </Table>
   );

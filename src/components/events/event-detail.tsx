@@ -15,7 +15,7 @@ import { TicketSelector } from "./ticket-selector";
 export function EventDetailView({
   detail,
   mode,
-  backHref = "/events",
+  backHref = "/",
   disabledReason,
   resale,
 }: {

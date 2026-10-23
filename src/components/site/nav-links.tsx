@@ -8,7 +8,11 @@ import { cn } from "@/lib/utils";
 export function NavLinks({ items }: { items: { href: string; label: string }[] }) {
   const path = usePathname();
   const isActive = (href: string) =>
-    href === "/events" ? path === "/" || path.startsWith("/events") : path === href || path.startsWith(`${href}/`);
+    href === "/"
+      ? path === "/" || path.startsWith("/events") || (path.startsWith("/resale") && !path.startsWith("/resale/sell") && !path.startsWith("/resale/mine"))
+      : href === "/account"
+        ? (path.startsWith("/account") && !path.startsWith("/account/profile")) || path.startsWith("/bookings")
+        : path === href || path.startsWith(`${href}/`);
   return (
     <nav aria-label="Main" className="hidden h-full items-stretch gap-1 text-[15px] md:flex">
       {items.map((it) => {

@@ -14,7 +14,7 @@ export default async function ProfilePage() {
   // Same rules as the header's profile menu; on phones this page is where the bottom bar's Profile tab lands.
   const showOrganizer = !!organizer || user.role === "organizer" || user.role === "admin";
   const links = [
-    { href: "/resale/mine", label: "My resale listings", icon: Repeat },
+    { href: "/resale/mine", label: "My listings", icon: Repeat },
     ...(showOrganizer ? [{ href: organizer ? "/organizer" : "/organizer/apply", label: "Organizer dashboard", icon: LayoutDashboard }] : []),
     ...(user.role === "admin" ? [{ href: "/admin", label: "Admin dashboard", icon: Shield }] : []),
   ];

@@ -130,6 +130,9 @@ export function ExternalListingForm({ defaultPhone, canScan }: { defaultPhone: s
         <Field label="Order or receipt number" htmlFor="orderRef" error={fe.orderRef} hint="Optional, but it speeds up review.">
           <Input id="orderRef" name="orderRef" defaultValue={v.orderRef} error={fe.orderRef} />
         </Field>
+        <Field label="M-Pesa code you paid with" htmlFor="mpesaCode" error={fe.mpesaCode} hint="Optional. The 10-character code from your M-Pesa message, e.g. SJK3H7QX2P. Tickets with one are checked faster.">
+          <Input id="mpesaCode" name="mpesaCode" defaultValue={v.mpesaCode} error={fe.mpesaCode} autoCapitalize="characters" maxLength={14} className="font-mono uppercase" />
+        </Field>
         <Field label="Anything buyers or our team should know" htmlFor="note" error={fe.note} className="sm:col-span-2">
           <Textarea id="note" name="note" defaultValue={v.note} error={fe.note} placeholder="e.g. Name on the ticket can be changed at the gate" />
         </Field>

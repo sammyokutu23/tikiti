@@ -12,7 +12,7 @@ import { sellerListings } from "@/server/resale/listings";
 import { sellerPayouts } from "@/server/resale/payouts";
 import { cancelListingAction } from "../actions";
 
-export const metadata = { title: "My resale listings" };
+export const metadata = { title: "My listings" };
 
 const PAYOUT_STATUS: Record<string, string> = {
   held: "Held until after the event",
@@ -30,7 +30,7 @@ export default async function MyListingsPage({ searchParams }: PageProps<"/resal
   return (
     <div className="mx-auto max-w-4xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
       <PageHeader
-        title="My resale listings"
+        title="My Listings"
         subtitle="Tickets you're selling and what you'll be paid."
         actions={<ButtonLink href="/resale/sell"><Tag className="size-4" aria-hidden /> Sell a ticket</ButtonLink>}
       />

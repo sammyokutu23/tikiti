@@ -7,7 +7,7 @@ import { formatMoney } from "@/lib/money";
 import { requireUser } from "@/server/auth/guards";
 import { userBookings } from "@/server/bookings/queries";
 
-export const metadata = { title: "My tickets" };
+export const metadata = { title: "My purchases" };
 
 export default async function AccountPage({ searchParams }: PageProps<"/account">) {
   const user = await requireUser("/account");
@@ -18,7 +18,7 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
   return (
     <div className="mx-auto max-w-4xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
       <PageHeader
-        title="My tickets"
+        title="My Purchases"
         subtitle={`Signed in as ${user.email}`}
         actions={
           <>
@@ -40,7 +40,7 @@ export default async function AccountPage({ searchParams }: PageProps<"/account"
             icon={<Ticket className="size-6" />}
             title={scope === "upcoming" ? "No upcoming tickets" : "No past events yet"}
             body={scope === "upcoming" ? "When you book an event, your tickets will show up here." : "Events you've attended will appear here."}
-            action={scope === "upcoming" ? <ButtonLink href="/events">Find events</ButtonLink> : undefined}
+            action={scope === "upcoming" ? <ButtonLink href="/">Find tickets</ButtonLink> : undefined}
           />
         ) : (
           rows.map(({ booking, event }) => (
