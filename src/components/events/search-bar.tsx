@@ -44,7 +44,7 @@ export function FilterForm({
 }) {
   const field = "h-12 w-full rounded-2xl border border-line bg-fg/5 px-4 text-sm focus:border-fg/40 focus:outline-none";
   return (
-    <form action="/" id="filters" className="grid gap-3 rounded-3xl border border-line bg-surface/70 p-3 sm:grid-cols-2 lg:grid-cols-6">
+    <form action="/" id="filters" className="grid grid-cols-1 gap-3 rounded-3xl border border-line bg-surface/70 p-3 sm:grid-cols-2 lg:grid-cols-6">
       <div className="relative sm:col-span-2">
         <label htmlFor="f-q" className="sr-only">Keyword</label>
         <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
@@ -80,7 +80,7 @@ export function FilterForm({
       </div>
       <div>
         <label htmlFor="f-date" className="sr-only">On a specific date</label>
-        <input id="f-date" type="date" name="date" defaultValue={values.date} className={field} aria-label="Specific date" />
+        <input id="f-date" type="date" name="date" defaultValue={values.date} className={cn(field, "min-w-0 appearance-none text-left [&::-webkit-date-and-time-value]:text-left")} aria-label="Specific date" />
       </div>
       <div className="sm:col-span-2">
         <label htmlFor="f-type" className="sr-only">Ticket type</label>
