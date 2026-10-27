@@ -33,7 +33,7 @@ export default async function SellTikoSokoTicketPage() {
             icon={<Ticket className="size-6" />}
             title="No tickets to resell"
             body="Valid, unused tickets for upcoming events booked with this account show up here."
-            action={<ButtonLink href="/resale/sell/outside" variant="secondary">Sell a ticket bought elsewhere</ButtonLink>}
+            action={<ButtonLink href="/resale/sell" variant="secondary">Sell a ticket bought elsewhere</ButtonLink>}
           />
         ) : (
           rows.map((r) => (

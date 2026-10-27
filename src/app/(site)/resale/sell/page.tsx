@@ -1,49 +1,35 @@
 import Link from "next/link";
-import { ArrowRight, Globe, Ticket } from "lucide-react";
-import { PageHeader } from "@/components/ui";
+import { Alert, Card, PageHeader } from "@/components/ui";
+import { formatPhone } from "@/lib/utils";
 import { requireUser } from "@/server/auth/guards";
+import { PAYOUT_HOLD_HOURS } from "@/server/resale/policy";
+import { scanConfig } from "@/server/resale/scan";
+import { ExternalListingForm } from "../forms";
 
 export const metadata = { title: "Sell a ticket" };
 
-const CHOICES = [
-  {
-    href: "/resale/sell/tikosoko",
-    icon: Ticket,
-    tone: "bg-mint text-[#3a2500]",
-    title: "A ticket I bought on TikoSoko",
-    body: "Pick it from your purchases and set a price. It goes live straight away.",
-  },
-  {
-    href: "/resale/sell/outside",
-    icon: Globe,
-    tone: "bg-sun text-[#2a1d00]",
-    title: "A ticket I bought somewhere else",
-    body: "Mookh, Ticketsasa, the organizer… Upload it with your proof of purchase. Our team reviews it before it goes live.",
-  },
-];
-
+/** Sell opens straight on the ticket details form; TikoSoko tickets have their own quicker page. */
 export default async function SellTicketPage() {
-  await requireUser("/resale/sell");
+  const user = await requireUser("/resale/sell");
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
-      <PageHeader title="Sell a ticket" subtitle="Where did you buy the ticket you'd like to sell?" />
-      <div className="grid gap-4 sm:grid-cols-2">
-        {CHOICES.map(({ href, icon: Icon, tone, title, body }) => (
-          <Link key={href} href={href} className="group flex flex-col gap-4 rounded-[var(--radius-card)] border border-line bg-surface p-5 transition hover:-translate-y-0.5 hover:border-teal/40 hover:shadow-lg">
-            <span className={`flex size-12 items-center justify-center rounded-2xl ${tone}`}>
-              <Icon className="size-6" aria-hidden />
-            </span>
-            <span className="space-y-1">
-              <span className="block text-lg font-bold">{title}</span>
-              <span className="block text-sm text-muted">{body}</span>
-            </span>
-            <span className="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-teal">
-              Continue <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
-            </span>
-          </Link>
-        ))}
-      </div>
-      <p className="text-sm text-muted">You get your full asking price on M-Pesa after the event. Buyers pay a 10% fee on top.</p>
+      <PageHeader title="Sell a ticket" subtitle="Tell us about your ticket and set your price." />
+      <Alert tone="info" title="How it works">
+        <ol className="list-inside list-decimal space-y-1">
+          <li>Upload the ticket and your proof of purchase{scanConfig() ? ", then scan the ticket to fill in its details" : ""}. Set your price and submit it for review. Our team checks it, usually within a day.</li>
+          <li>Once approved, your ticket appears on the resale marketplace.</li>
+          <li>When it sells, the buyer downloads your ticket file. Don&apos;t use or share it again.</li>
+          <li>We pay you on M-Pesa {PAYOUT_HOLD_HOURS.external} hours after the event, as long as the buyer didn&apos;t report a problem.</li>
+        </ol>
+      </Alert>
+      <p className="text-sm text-muted">
+        Bought it on TikoSoko?{" "}
+        <Link href="/resale/sell/tikosoko" className="font-semibold text-teal hover:underline">Pick it from your tickets</Link>{" "}
+        instead. It goes live straight away, no upload needed.
+      </p>
+      <Card className="p-5 sm:p-6">
+        <ExternalListingForm defaultPhone={user.phone ? formatPhone(user.phone) : ""} canScan={scanConfig() !== null} />
+      </Card>
     </div>
   );
 }

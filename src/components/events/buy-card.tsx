@@ -10,33 +10,74 @@ import { EventImage } from "./event-image";
 
 const MAX_OPTIONS = 5;
 
-function OptionRow({ o }: { o: BuyOption }) {
-  const unavailable = o.kind === "primary" && o.state !== "on_sale";
+/** Tickets with the same name (organizer's tier and fans' resale alike) collapse into one row. */
+type OptionGroup = { key: string; name: string; options: BuyOption[] };
+
+function groupOptions(options: BuyOption[]): OptionGroup[] {
+  const groups = new Map<string, OptionGroup>();
+  for (const o of options) {
+    const key = o.name.trim().replace(/\s+/g, " ").toLowerCase();
+    const g = groups.get(key);
+    if (g) g.options.push(o);
+    else groups.set(key, { key, name: o.name.trim(), options: [o] });
+  }
+  // Options arrive cheapest first, so groups do too.
+  return [...groups.values()];
+}
+
+const available = (o: BuyOption) => o.kind === "resale" || o.state === "on_sale";
+
+function GroupRow({ g, eventHref, isExternal }: { g: OptionGroup; eventHref: string; isExternal: boolean }) {
+  const buyable = g.options.filter(available);
+  const priced = buyable.length ? buyable : g.options;
+  const cheapest = priced.reduce((a, b) => (b.priceMinor < a.priceMinor ? b : a));
+  const varied = priced.some((o) => o.priceMinor !== cheapest.priceMinor);
+  const resale = g.options.filter((o) => o.kind === "resale");
+  const primary = g.options.find((o) => o.kind === "primary");
+  // A single ticket opens directly; a group opens the event page, which lists every ticket for it.
+  const href = g.options.length === 1 || isExternal ? cheapest.href : eventHref;
+
+  const notes: React.ReactNode[] = [];
+  if (primary?.kind === "primary") {
+    if (primary.state === "sold_out") notes.push("Sold out");
+    else if (primary.state === "upcoming") notes.push("Sales open soon");
+    else if (primary.remaining <= 20) notes.push(`Only ${primary.remaining} left`);
+  }
+  if (resale.length > 0) {
+    const label =
+      resale.length > 1
+        ? `${resale.length} resale tickets`
+        : `Resale · ${resale[0].kind === "resale" && resale[0].trust === "platform" ? "verified TikoSoko ticket" : "outside ticket, reviewed"}`;
+    notes.push(
+      <span key="resale" className="inline-flex items-center gap-1 font-semibold text-sun">
+        <Repeat className="size-3" aria-hidden /> {label}
+      </span>,
+    );
+  }
+
   return (
     <li>
       <Link
-        href={o.href}
-        className={cn("flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-fg/6", unavailable && "opacity-60")}
+        href={href}
+        className={cn("flex items-center gap-3 rounded-2xl px-3 py-2.5 transition hover:bg-fg/6", buyable.length === 0 && "opacity-60")}
       >
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">{o.name}</span>
-          <span className="block text-xs text-muted">
-            {o.kind === "resale" ? (
-              <span className="inline-flex items-center gap-1 font-semibold text-sun">
-                <Repeat className="size-3" aria-hidden /> Resale · {o.trust === "platform" ? "verified TikoSoko ticket" : "outside ticket, reviewed"}
-              </span>
-            ) : o.state === "sold_out" ? (
-              "Sold out"
-            ) : o.state === "upcoming" ? (
-              "Sales open soon"
-            ) : o.remaining <= 20 ? (
-              `Only ${o.remaining} left`
-            ) : (
-              "From the organizer"
-            )}
-          </span>
+          <span className="block truncate text-sm font-medium">{g.name}</span>
+          {notes.length > 0 && (
+            <span className="block text-xs text-muted">
+              {notes.map((n, i) => (
+                <span key={i}>
+                  {i > 0 && " · "}
+                  {n}
+                </span>
+              ))}
+            </span>
+          )}
         </span>
-        <span className="text-right text-sm font-bold tabular-nums">{o.priceMinor === 0 ? "Free" : formatMoney(o.priceMinor)}</span>
+        <span className="text-right text-sm font-bold tabular-nums">
+          {varied && <span className="block text-[11px] font-medium text-muted">from</span>}
+          {cheapest.priceMinor === 0 ? "Free" : formatMoney(cheapest.priceMinor)}
+        </span>
         <ChevronRight className="size-4 shrink-0 text-muted" aria-hidden />
       </Link>
     </li>
@@ -45,7 +86,8 @@ function OptionRow({ o }: { o: BuyOption }) {
 
 /** One event with every ticket on sale for it: the organizer's and fans' resale tickets. */
 export function BuyEventCard({ event, priority = false }: { event: BuyEvent; priority?: boolean }) {
-  const shown = event.options.slice(0, MAX_OPTIONS);
+  const groups = groupOptions(event.options);
+  const shown = groups.slice(0, MAX_OPTIONS);
   const resaleCount = event.options.filter((o) => o.kind === "resale").length;
   return (
     <article className="flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-line bg-surface sm:flex-row">
@@ -70,16 +112,16 @@ export function BuyEventCard({ event, priority = false }: { event: BuyEvent; pri
           <p className="rounded-2xl bg-fg/5 px-3 py-2.5 text-sm text-muted">No tickets on sale right now.</p>
         ) : (
           <ul className="-mx-1 divide-y divide-line">
-            {shown.map((o) => (
-              <OptionRow key={`${o.kind}-${o.id}`} o={o} />
+            {shown.map((g) => (
+              <GroupRow key={g.key} g={g} eventHref={event.href} isExternal={event.isExternal} />
             ))}
           </ul>
         )}
-        {(event.options.length > MAX_OPTIONS || resaleCount > 0) && (
+        {(groups.length > MAX_OPTIONS || resaleCount > 0) && (
           <p className="text-xs text-muted">
             {event.options.length} ticket option{event.options.length === 1 ? "" : "s"}
             {resaleCount > 0 ? ` · ${resaleCount} from fans reselling` : ""}
-            {event.options.length > MAX_OPTIONS && (
+            {groups.length > MAX_OPTIONS && (
               <>
                 {" · "}
                 <Link href={event.href} className="font-semibold text-teal hover:underline">See all</Link>
