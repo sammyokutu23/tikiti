@@ -51,7 +51,7 @@ export function FilterForm({
     (v) => v !== undefined && v !== "",
   ).length;
   return (
-    <form action="/" id="filters" role="search" className="rounded-3xl border border-line bg-surface/70 p-2">
+    <form action="/" id="filters" role="search" className="rounded-3xl border border-line bg-surface/70 p-1">
       <input id="f-toggle" type="checkbox" defaultChecked={active > 0} className="peer sr-only" aria-label="Show filters" />
       <div className="relative flex items-center rounded-2xl peer-focus-visible:ring-2 peer-focus-visible:ring-fg/40">
         <label htmlFor="f-q" className="sr-only">Keyword</label>
@@ -62,12 +62,12 @@ export function FilterForm({
           defaultValue={values.q}
           placeholder="Search events, artists, venues…"
           enterKeyHint="search"
-          className="h-12 w-full min-w-0 rounded-2xl bg-transparent pl-10 pr-24 text-base text-fg placeholder:text-muted focus:outline-none"
+          className="h-10 w-full min-w-0 rounded-2xl bg-transparent pl-10 pr-20 text-base text-fg placeholder:text-muted focus:outline-none"
         />
         <label
           htmlFor="f-toggle"
           title="Filters"
-          className="absolute right-12 top-1/2 flex size-10 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-fg/80 transition hover:bg-fg/10 hover:text-fg"
+          className="absolute right-10 top-1/2 flex size-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-fg/80 transition hover:bg-fg/10 hover:text-fg"
         >
           <SlidersHorizontal className="size-5" aria-hidden />
           {active > 0 && (
@@ -78,7 +78,7 @@ export function FilterForm({
         </label>
         <button
           aria-label="Search"
-          className="absolute right-1 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-fg hover:bg-primary/90"
+          className="absolute right-0.5 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-primary-fg hover:bg-primary/90"
         >
           <Search className="size-4" aria-hidden />
         </button>
